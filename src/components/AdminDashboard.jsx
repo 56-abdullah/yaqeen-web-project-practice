@@ -1,9 +1,9 @@
-const AdminDashboard = () => {
+function AdminDashboard() {
   const requests = [
-    { id: 1, type: 'Seller Registration', name: 'Ali Khan', date: '2026-05-01', status: 'Pending' },
-    { id: 2, type: 'Product Listing', name: 'Vintage Watch', date: '2026-05-02', status: 'Pending' },
-    { id: 3, type: 'Seller Registration', name: 'Sara Ahmed', date: '2026-05-02', status: 'Pending' },
-    { id: 4, type: 'Product Listing', name: 'Gaming Laptop', date: '2026-05-03', status: 'Pending' }
+    { id: 1, type: 'Seller Registration', name: 'Sikandar Khan', date: '2023-05-01', status: 'Pending' },
+    { id: 2, type: 'Product Listing', name: 'Vintage Watch', date: '2023-05-02', status: 'Pending' },
+    { id: 3, type: 'Seller Registration', name: 'Sara Ahmed', date: '2024-05-02', status: 'Pending' },
+    { id: 4, type: 'Product Listing', name: 'Gaming Laptop', date: '2023-05-03', status: 'Pending' }
   ];
 
   return (
@@ -54,6 +54,6 @@ const AdminDashboard = () => {
       </div>
     </div>
   );
-};
+}
 
 export default AdminDashboard;

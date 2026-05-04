@@ -6,8 +6,6 @@ import LandingPage from './components/LandingPage';
 function App() {
   return (
     <>
-      {/* Uncomment ONE at a time to view */}
-
       <LandingPage />
 
       {/* <Registration /> */}

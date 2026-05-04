@@ -1,4 +1,4 @@
-const Navigation = () => {
+function Navigation() {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
       <div className="container">
@@ -25,6 +25,6 @@ const Navigation = () => {
       </div>
     </nav>
   );
-};
+}
 
 export default Navigation;

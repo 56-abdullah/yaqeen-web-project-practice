@@ -1,4 +1,4 @@
-const Hero = () => {
+function Hero() {
   return (
     <div className="hero-section">
       <div id="heroCarousel" className="carousel slide" data-bs-ride="carousel">
@@ -35,7 +35,6 @@ const Hero = () => {
         </button>
       </div>
       
-      {/* Some extra content to make it look full */}
       <div className="container mt-5">
         <div className="row text-center">
           <div className="col-md-4 mb-4">
@@ -69,6 +68,6 @@ const Hero = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Hero;

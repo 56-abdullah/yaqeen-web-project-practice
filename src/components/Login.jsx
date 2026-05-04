@@ -1,4 +1,4 @@
-const Login = () => {
+function Login() {
   return (
     <div className="container mt-5">
       <div className="row justify-content-center">
@@ -27,6 +27,6 @@ const Login = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Login;

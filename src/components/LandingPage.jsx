@@ -2,12 +2,11 @@ import Navigation from './Navigation';
 import Hero from './Hero';
 import Footer from './Footer';
 
-const LandingPage = () => {
+function LandingPage() {
   return (
     <div className="d-flex flex-column min-vh-100">
       <Navigation />
       
-      {/* Main content area */}
       <main className="flex-grow-1">
         <Hero />
       </main>
@@ -15,6 +14,6 @@ const LandingPage = () => {
       <Footer />
     </div>
   );
-};
+}
 
 export default LandingPage;

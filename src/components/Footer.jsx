@@ -1,4 +1,4 @@
-const Footer = () => {
+function Footer() {
   return (
     <footer className="bg-dark text-white text-center py-4 mt-auto">
       <div className="container">
@@ -18,7 +18,6 @@ const Footer = () => {
           <div className="col-md-4">
             <h5>Connect With Us</h5>
             <p className="text-muted small">Follow us on social media for the latest updates.</p>
-            {/* Using text for icons to keep it simple and dependency-free for beginner level */}
             <div className="d-flex justify-content-center gap-3">
               <span className="badge bg-primary">Facebook</span>
               <span className="badge bg-info">Twitter</span>
@@ -31,6 +30,6 @@ const Footer = () => {
       </div>
     </footer>
   );
-};
+}
 
 export default Footer;

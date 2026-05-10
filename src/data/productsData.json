@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "title": "Premium Leather Watch",
+    "price": 12500,
+    "seller": "Sikandar Khan",
+    "category": "Accessories",
+    "rating": 4.8,
+    "image": "/images/7.png",
+    "description": "Handcrafted genuine leather watch with stainless steel case and water-resistant design. Perfect for formal and casual occasions.",
+    "stock": 15,
+    "condition": "New"
+  },
+  {
+    "id": 2,
+    "title": "Gaming Laptop Pro",
+    "price": 185000,
+    "seller": "TechZone PK",
+    "category": "Electronics",
+    "rating": 4.9,
+    "image": "/images/8.png",
+    "description": "High-performance gaming laptop with RTX graphics, 16GB RAM, 512GB SSD. Built for professional gamers and creators.",
+    "stock": 8,
+    "condition": "New"
+  },
+  {
+    "id": 3,
+    "title": "Handwoven Silk Shawl",
+    "price": 4500,
+    "seller": "Sara Ahmed",
+    "category": "Fashion",
+    "rating": 4.7,
+    "image": "/images/9.png",
+    "description": "Exquisite handwoven silk shawl featuring traditional Pakistani embroidery. A statement piece for any wardrobe.",
+    "stock": 22,
+    "condition": "New"
+  },
+  {
+    "id": 4,
+    "title": "Wireless Noise-Cancelling Headphones",
+    "price": 8900,
+    "seller": "AudioHub",
+    "category": "Electronics",
+    "rating": 4.6,
+    "image": "/images/10.png",
+    "description": "Premium wireless headphones with active noise cancellation, 30-hour battery life, and crystal-clear audio quality.",
+    "stock": 30,
+    "condition": "New"
+  },
+  {
+    "id": 5,
+    "title": "Mountain Trekking Backpack",
+    "price": 6200,
+    "seller": "OutdoorGear PK",
+    "category": "Sports",
+    "rating": 4.5,
+    "image": "/images/12.png",
+    "description": "Durable 45L trekking backpack with waterproof coating, ergonomic straps, and multiple compartments for extended hikes.",
+    "stock": 18,
+    "condition": "New"
+  },
+  {
+    "id": 6,
+    "title": "Vintage Ceramic Tea Set",
+    "price": 3800,
+    "seller": "HomeDecor Studio",
+    "category": "Home",
+    "rating": 4.4,
+    "image": "/images/13.png",
+    "description": "Elegant 6-piece ceramic tea set with hand-painted floral patterns. Includes teapot, cups, and serving tray.",
+    "stock": 12,
+    "condition": "New"
+  },
+  {
+    "id": 7,
+    "title": "Professional DSLR Camera",
+    "price": 95000,
+    "seller": "CameraWorld",
+    "category": "Electronics",
+    "rating": 4.9,
+    "image": "/images/14.png",
+    "description": "Full-frame DSLR camera with 24.5MP sensor, 4K video recording, and dual card slots. Ideal for professionals.",
+    "stock": 5,
+    "condition": "New"
+  },
+  {
+    "id": 8,
+    "title": "Organic Skincare Bundle",
+    "price": 2800,
+    "seller": "NaturalGlow PK",
+    "category": "Beauty",
+    "rating": 4.3,
+    "image": "/images/16.png",
+    "description": "Complete organic skincare set with cleanser, toner, moisturizer, and serum. Made with 100% natural ingredients.",
+    "stock": 40,
+    "condition": "New"
+  }
+]

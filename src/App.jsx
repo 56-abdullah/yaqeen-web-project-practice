@@ -6,13 +6,13 @@ import LandingPage from './components/LandingPage';
 function App() {
   return (
     <>
-      <LandingPage />
+      {/* <LandingPage /> */}
 
       {/* <Registration /> */}
 
       {/* <Login /> */}
 
-      {/* <AdminDashboard /> */}
+      <AdminDashboard />
     </>
   );
 }

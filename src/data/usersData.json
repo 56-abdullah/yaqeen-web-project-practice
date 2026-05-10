@@ -1,0 +1,8 @@
+[
+  { "id": 1, "name": "Sikandar Khan", "email": "sikandar.khan@email.com", "role": "Seller", "status": "Active", "joinDate": "2024-01-15", "city": "Lahore", "phone": "+92 300 1234567" },
+  { "id": 2, "name": "Sara Ahmed", "email": "sara.ahmed@email.com", "role": "Seller", "status": "Pending", "joinDate": "2024-05-02", "city": "Karachi", "phone": "+92 321 9876543" },
+  { "id": 3, "name": "Ahmed Raza", "email": "ahmed.raza@email.com", "role": "Buyer", "status": "Active", "joinDate": "2024-02-20", "city": "Islamabad", "phone": "+92 333 4567890" },
+  { "id": 4, "name": "Fatima Noor", "email": "fatima.noor@email.com", "role": "Seller", "status": "Active", "joinDate": "2024-03-10", "city": "Faisalabad", "phone": "+92 345 6789012" },
+  { "id": 5, "name": "Hassan Ali", "email": "hassan.ali@email.com", "role": "Buyer", "status": "Active", "joinDate": "2024-04-05", "city": "Rawalpindi", "phone": "+92 312 3456789" },
+  { "id": 6, "name": "Ayesha Khan", "email": "ayesha.khan@email.com", "role": "Buyer", "status": "Suspended", "joinDate": "2024-06-18", "city": "Multan", "phone": "+92 301 2345678" }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "name": "Ahmed Raza",
+    "role": "Verified Buyer",
+    "text": "Yaqeen Marketplace has completely changed the way I shop online. The verified seller system gives me confidence that every product I receive is genuine and exactly as described. I have been using this platform for over a year now and have never been disappointed.",
+    "avatar": "/images/18.jpg"
+  },
+  {
+    "id": 2,
+    "name": "Fatima Noor",
+    "role": "Seller Partner",
+    "text": "As a small business owner, Yaqeen gave me a platform to reach thousands of customers I never could have found on my own. The seller dashboard is intuitive, and the support team is always available when I need help with my listings.",
+    "avatar": "/images/19.jpg"
+  },
+  {
+    "id": 3,
+    "name": "Hassan Ali",
+    "role": "Premium Member",
+    "text": "The quality of products on Yaqeen is unmatched. I recently purchased a handwoven shawl and a leather watch, both arrived in perfect condition with fast delivery. The secure payment system makes every transaction worry-free.",
+    "avatar": "/images/20.jpg"
+  },
+  {
+    "id": 4,
+    "name": "Ayesha Khan",
+    "role": "Verified Buyer",
+    "text": "What sets Yaqeen apart is their commitment to authenticity. Every seller goes through a rigorous verification process, and their 24/7 customer support is genuinely helpful. I recommend this marketplace to everyone I know.",
+    "avatar": "/images/21.png"
+  }
+]

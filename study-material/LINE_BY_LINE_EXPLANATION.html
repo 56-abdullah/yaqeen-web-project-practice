@@ -1,0 +1,767 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>Yaqeen — Line-by-Line Explanation</title>
+<style>
+  body { font-family: "Segoe UI", Arial, sans-serif; color:#1a1a1a; line-height:1.55;
+         max-width:860px; margin:0 auto; padding:30px 26px; font-size:13px; }
+  h1 { font-size:25px; color:#0d3b66; border-bottom:3px solid #0d3b66; padding-bottom:6px; }
+  h2 { font-size:19px; color:#0d3b66; margin-top:28px; border-bottom:2px solid #cdd9e6; padding-bottom:4px; }
+  h3 { font-size:15px; color:#14467a; margin-top:18px; }
+  code { background:#eef2f7; padding:1px 5px; border-radius:4px;
+         font-family:Consolas,"Courier New",monospace; font-size:11.5px; color:#b8004a; }
+  pre { background:#1e1e2e; color:#e6e6e6; padding:12px 14px; border-radius:6px;
+        overflow-x:auto; font-size:11px; line-height:1.45; white-space:pre-wrap; word-break:break-word; }
+  pre code { background:none; color:inherit; padding:0; }
+  table { border-collapse:collapse; width:100%; margin:12px 0; font-size:12px; }
+  th,td { border:1px solid #c9d4e0; padding:6px 9px; text-align:left; vertical-align:top; }
+  th { background:#0d3b66; color:#fff; }
+  tr:nth-child(even) td { background:#f4f7fb; }
+  hr { border:none; border-top:2px solid #dde4ec; margin:26px 0; }
+  ul,ol { margin:8px 0 8px 22px; }
+  li { margin:3px 0; }
+  strong { color:#0d2740; }
+</style></head><body>
+<h1 id="yaqeen-line-by-line-explanation-xampp-axios-integration">Yaqeen — Line-by-Line Explanation (XAMPP + axios integration)</h1>
+<p>Covers <strong>everything</strong> built across the two sessions:
+- <strong>Session 1 — WRITE side:</strong> forms send data INTO the database (INSERT / UPDATE).
+- <strong>Session 2 — READ side:</strong> pages pull data OUT of the database (SELECT) and show it.</p>
+<hr />
+<h1 id="part-0-the-mental-model">PART 0 — The mental model</h1>
+<p>Three programs running at once:</p>
+<table>
+<thead>
+<tr>
+<th>Program</th>
+<th>Where</th>
+<th>Job</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>React (Vite)</strong></td>
+<td>browser, <code>http://localhost:5173</code></td>
+<td>the screens the user sees</td>
+</tr>
+<tr>
+<td><strong>Apache + PHP</strong></td>
+<td><code>http://localhost</code> (port 80)</td>
+<td>runs <code>.php</code> files in <code>D:\xampp\htdocs\yaqeen-backend\</code></td>
+</tr>
+<tr>
+<td><strong>MySQL</strong></td>
+<td>port 3306</td>
+<td>stores the data in the <code>yaqeen_web_project</code> database</td>
+</tr>
+</tbody>
+</table>
+<p><strong>axios</strong> is the messenger that carries data between React and PHP over HTTP.</p>
+<p>Two directions:</p>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>WRITE:  form  → axios.post → PHP → INSERT/UPDATE → MySQL
+READ :  page  → axios.get  → PHP → SELECT        → MySQL → JSON back → screen
+</code></pre></div>
+
+<hr />
+<h1 id="part-1-connectionphp-shared-by-every-php-file">PART 1 — connection.php (shared by every PHP file)</h1>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #9C6500">&lt;?php</span>
+    <span style="color: #19177C">$connect</span> <span style="color: #666">=</span> <span style="color: #008000">mysqli_connect</span>(<span style="color: #BA2121">&quot;localhost&quot;</span>, <span style="color: #BA2121">&quot;root&quot;</span>, <span style="color: #BA2121">&quot;&quot;</span>, <span style="color: #BA2121">&quot;yaqeen_web_project&quot;</span>);
+
+    <span style="color: #008000; font-weight: bold">if</span> (<span style="color: #666">!</span><span style="color: #19177C">$connect</span>) {
+        <span style="color: #008000; font-weight: bold">die</span>(<span style="color: #BA2121">&quot;Connection failed: &quot;</span> <span style="color: #666">.</span> mysqli_connect_error());
+    }
+<span style="color: #9C6500">?&gt;</span>
+</code></pre></div>
+
+<ul>
+<li><code>&lt;?php</code> — start PHP code.</li>
+<li><code>mysqli_connect(host, user, password, database)</code> — opens a live connection to MySQL.</li>
+<li><code>"localhost"</code> = MySQL is on this same PC.</li>
+<li><code>"root"</code> = the database username.</li>
+<li><code>""</code> = empty password (XAMPP's default for root).</li>
+<li><code>"yaqeen_web_project"</code> = which database to use.</li>
+<li>The result (a connection handle) is saved in the variable <code>$connect</code>.</li>
+<li><code>if (!$connect)</code> — <code>!</code> means "not". So: "if there is NO connection".</li>
+<li><code>die(...)</code> — stop the whole script immediately and print the message.</li>
+<li><code>mysqli_connect_error()</code> — the reason the connection failed.</li>
+<li><code>.</code> in PHP = glue two strings together (like <code>+</code> for strings in JS).</li>
+<li>Every other PHP file runs <code>include("connection.php")</code>, which means "paste this file's code here", so they all get the same <code>$connect</code>.</li>
+</ul>
+<hr />
+<h1 id="part-2-the-cors-options-block-top-of-every-endpoint">PART 2 — The CORS + OPTIONS block (top of EVERY endpoint)</h1>
+<p>Every endpoint starts with these 9 lines. Explained once here; identical everywhere.</p>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>header(&quot;Access-Control-Allow-Origin: *&quot;);
+header(&quot;Access-Control-Allow-Methods: POST, GET, OPTIONS&quot;);
+header(&quot;Access-Control-Allow-Headers: Content-Type&quot;);
+
+if ($_SERVER[&#39;REQUEST_METHOD&#39;] == &#39;OPTIONS&#39;) {
+    http_response_code(200);
+    exit();
+}
+</code></pre></div>
+
+<ul>
+<li>React (port 5173) and PHP (port 80) are <strong>different origins</strong>. By default browsers BLOCK a page from calling a different origin (security rule called CORS).</li>
+<li><code>header("Access-Control-Allow-Origin: *")</code> — PHP tells the browser "I allow calls from anyone (<code>*</code>)".</li>
+<li><code>Allow-Methods</code> — which HTTP verbs are allowed (POST/GET/OPTIONS).</li>
+<li><code>Allow-Headers: Content-Type</code> — allow the header that says "I'm sending JSON".</li>
+<li><code>$_SERVER['REQUEST_METHOD']</code> — what kind of request came in (GET, POST, OPTIONS...).</li>
+<li>Before a real POST, the browser secretly sends a <strong>preflight</strong> <code>OPTIONS</code> request asking "am I allowed?". </li>
+<li><code>if (... == 'OPTIONS')</code> — if this is that test request:</li>
+<li><code>http_response_code(200)</code> — answer "200 OK = yes allowed".</li>
+<li><code>exit()</code> — stop here (nothing else to do for a test request).</li>
+<li>Without this block, the real request never happens and you get a CORS error in the console.</li>
+</ul>
+<hr />
+<h1 id="part-3-write-endpoints-session-1">PART 3 — WRITE endpoints (Session 1)</h1>
+<h2 id="31-register_processingphp">3.1 register_processing.php</h2>
+<p>After the CORS block:</p>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>include(&quot;connection.php&quot;);
+</code></pre></div>
+
+<ul>
+<li>Pastes in <code>connection.php</code> → now we have <code>$connect</code>.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$rawData = file_get_contents(&quot;php://input&quot;);
+$data = json_decode($rawData);
+</code></pre></div>
+
+<ul>
+<li><code>axios.post</code> sends the form as a <strong>JSON string</strong> in the request body.</li>
+<li><code>file_get_contents("php://input")</code> — read that raw body text into <code>$rawData</code> (e.g. <code>{"email":"a@b.com","password":"123"}</code>).</li>
+<li><code>json_decode($rawData)</code> — turn that JSON text into a PHP object stored in <code>$data</code>. Now <code>$data-&gt;email</code> works.</li>
+<li><code>-&gt;</code> in PHP = read a property of an object (like <code>.</code> in JS: <code>data.email</code>).</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>if (isset($data-&gt;email) &amp;&amp; isset($data-&gt;password)) {
+</code></pre></div>
+
+<ul>
+<li><code>isset(...)</code> — "does this field exist and is not empty/null?".</li>
+<li><code>&amp;&amp;</code> — AND. So: only proceed if BOTH email and password were sent. A safety check.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$accountType = $data-&gt;accountType;
+$fullName    = $data-&gt;fullName;
+$email       = $data-&gt;email;
+// ...the rest of the fields...
+$password    = $data-&gt;password;
+</code></pre></div>
+
+<ul>
+<li>Copy each value out of <code>$data</code> into a short variable. Just for readability in the query below.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$businessName = isset($data-&gt;businessName) ? $data-&gt;businessName : &quot;&quot;;
+</code></pre></div>
+
+<ul>
+<li><code>condition ? A : B</code> — ternary "if-else in one line". </li>
+<li>"If businessName was sent, use it; otherwise use empty string <code>""</code>." (Buyers don't send a business name, so this avoids an error.)</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$query = &quot;INSERT INTO users
+          (account_type, full_name, email, phone, id_card, city,
+           postal_code, address, business_name, business_category, user_password)
+          VALUES
+          (&#39;$accountType&#39;, &#39;$fullName&#39;, &#39;$email&#39;, &#39;$phone&#39;, &#39;$idCard&#39;, &#39;$city&#39;,
+           &#39;$postalCode&#39;, &#39;$address&#39;, &#39;$businessName&#39;, &#39;$businessCategory&#39;, &#39;$password&#39;)&quot;;
+</code></pre></div>
+
+<ul>
+<li>The SQL command as text.</li>
+<li><code>INSERT INTO users (columns...) VALUES (values...)</code> — add one new row to the <code>users</code> table.</li>
+<li>First parentheses = column names. Second = the matching values.</li>
+<li><code>'$variable'</code> — PHP swaps the variable's value into the string (string interpolation). The quotes <code>'...'</code> are required because these are text values in SQL.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$process_query = mysqli_query($connect, $query);
+</code></pre></div>
+
+<ul>
+<li><code>mysqli_query($connect, $query)</code> — actually RUN the SQL on the database.</li>
+<li>For an INSERT it returns <code>true</code> if it worked, <code>false</code> if it failed. Saved in <code>$process_query</code>.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>if ($process_query) {
+    echo json_encode([
+        &quot;success&quot; =&gt; true,
+        &quot;message&quot; =&gt; &quot;Account created successfully for $fullName.&quot;
+    ]);
+}
+</code></pre></div>
+
+<ul>
+<li>If the insert worked:</li>
+<li>Build a PHP array <code>["success"=&gt;true, "message"=&gt;"..."]</code>. (<code>=&gt;</code> links a key to its value.)</li>
+<li><code>json_encode(...)</code> — turn it into JSON text.</li>
+<li><code>echo</code> — send it back as the response. This is what axios receives as <code>response.data</code>.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>} else {
+    echo json_encode([
+        &quot;success&quot; =&gt; false,
+        &quot;message&quot; =&gt; &quot;Try again. Database insertion failed: &quot; . mysqli_error($connect)
+    ]);
+}
+</code></pre></div>
+
+<ul>
+<li>If it failed: send <code>success:false</code> and the DB error message (<code>mysqli_error</code> = what went wrong).</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>} else {
+    echo json_encode([
+        &quot;success&quot; =&gt; false,
+        &quot;message&quot; =&gt; &quot;No data was received by the server.&quot;
+    ]);
+}
+</code></pre></div>
+
+<ul>
+<li>This <code>else</code> belongs to the very first <code>if (isset...)</code>. If email/password were missing, say so.</li>
+</ul>
+<h2 id="32-contact_processingphp">3.2 contact_processing.php</h2>
+<p>Identical structure. Only differences:
+- Guard is <code>if (isset($data-&gt;email) &amp;&amp; isset($data-&gt;message))</code> — a contact message must have email + message.
+- <code>INSERT INTO contacts (full_name, email, phone, subject, message_type, priority, company, message) VALUES (...)</code> — writes to the <strong>contacts</strong> table instead.</p>
+<h2 id="33-user_add_processingphp">3.3 user_add_processing.php</h2>
+<p>Identical structure. Differences:
+- <code>$fullName = $data-&gt;name;</code> — the admin form field is called <code>name</code> (not <code>fullName</code>), but the DB column is <code>full_name</code>. So we read <code>-&gt;name</code> and store it in the <code>full_name</code> column.
+- Inserts the extra admin columns: <code>role</code>, <code>status</code>, <code>join_date</code>.</p>
+<h2 id="34-user_update_processingphp-update-not-insert">3.4 user_update_processing.php (UPDATE, not INSERT)</h2>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>if (isset($data-&gt;id) &amp;&amp; isset($data-&gt;email)) {
+    $id = $data-&gt;id;
+    // ...other fields...
+</code></pre></div>
+
+<ul>
+<li>Needs an <code>id</code> so it knows WHICH row to change.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$query = &quot;UPDATE users SET
+            full_name = &#39;$fullName&#39;,
+            email     = &#39;$email&#39;,
+            ...
+          WHERE id = &#39;$id&#39;&quot;;
+</code></pre></div>
+
+<ul>
+<li><code>UPDATE users SET column='value', ...</code> — change columns in EXISTING rows.</li>
+<li><code>WHERE id = '$id'</code> — <strong>only</strong> the row with this id. (Without <code>WHERE</code>, it would overwrite EVERY user — dangerous.)</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>if (isset($data-&gt;password) &amp;&amp; $data-&gt;password != &quot;&quot; &amp;&amp; $data-&gt;password != &quot;********&quot;) {
+    $password = $data-&gt;password;
+    $query = &quot;UPDATE users SET ... user_password = &#39;$password&#39; ... WHERE id = &#39;$id&#39;&quot;;
+}
+</code></pre></div>
+
+<ul>
+<li>The edit form pre-fills the password box with <code>********</code> (a placeholder, not the real password).</li>
+<li>This says: only include the password in the update <strong>if</strong> the admin actually typed a new one (not empty, not the placeholder). Otherwise keep the old password untouched.</li>
+<li><code>!=</code> means "not equal".</li>
+</ul>
+<p>Then the same <code>mysqli_query</code> + success/fail JSON as the others.</p>
+<hr />
+<h1 id="part-4-serviceapijs-the-react-side-bridge">PART 4 — serviceApi.js (the React side bridge)</h1>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">import</span><span style="color: #BBB"> </span>axios<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">from</span><span style="color: #BBB"> </span><span style="color: #BA2121">&quot;axios&quot;</span>;
+</code></pre></div>
+
+<ul>
+<li>Load the axios library.</li>
+</ul>
+<h2 id="write-functions">WRITE functions</h2>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">export</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>process_registration<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">async</span><span style="color: #BBB"> </span>(data)<span style="color: #BBB"> </span>=&gt;<span style="color: #BBB"> </span>{
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>response<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">await</span><span style="color: #BBB"> </span>axios.post(
+<span style="color: #BBB">    </span><span style="color: #BA2121">&quot;http://localhost/yaqeen-backend/register_processing.php&quot;</span>,
+<span style="color: #BBB">    </span>data
+<span style="color: #BBB">  </span>);
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">return</span><span style="color: #BBB"> </span>response.data;
+};
+</code></pre></div>
+
+<ul>
+<li><code>export const process_registration</code> — a function other files can import.</li>
+<li><code>async</code> — marks it as doing slow network work (lets us use <code>await</code>).</li>
+<li><code>(data) =&gt;</code> — it receives the form data object.</li>
+<li><code>axios.post(url, data)</code> — send a POST request to that PHP file, with <code>data</code> as the JSON body. axios auto-converts the JS object to JSON.</li>
+<li><code>await</code> — pause until PHP replies (page stays responsive).</li>
+<li><code>response</code> — axios's reply object. <code>response.data</code> = the JSON PHP echoed, already parsed back into a JS object.</li>
+<li><code>return response.data</code> — hand it back to whoever called this function.</li>
+</ul>
+<p><code>process_contact</code>, <code>process_user_add</code>, <code>process_user_update</code> are the same, just different URLs.</p>
+<h2 id="read-functions-session-2">READ functions (Session 2)</h2>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">export</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>get_products<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">async</span><span style="color: #BBB"> </span>()<span style="color: #BBB"> </span>=&gt;<span style="color: #BBB"> </span>{
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>response<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">await</span><span style="color: #BBB"> </span>axios.get(
+<span style="color: #BBB">    </span><span style="color: #BA2121">&quot;http://localhost/yaqeen-backend/get_products.php&quot;</span>
+<span style="color: #BBB">  </span>);
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">return</span><span style="color: #BBB"> </span>response.data;
+};
+</code></pre></div>
+
+<ul>
+<li><code>axios.get(url)</code> — a GET request (no body; we're asking for data, not sending it).</li>
+<li>Returns the array of products.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">export</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>get_product<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">async</span><span style="color: #BBB"> </span>(id)<span style="color: #BBB"> </span>=&gt;<span style="color: #BBB"> </span>{
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>response<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">await</span><span style="color: #BBB"> </span>axios.get(
+<span style="color: #BBB">    </span><span style="color: #BA2121">&quot;http://localhost/yaqeen-backend/get_product.php?id=&quot;</span><span style="color: #BBB"> </span><span style="color: #666">+</span><span style="color: #BBB"> </span>id
+<span style="color: #BBB">  </span>);
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">return</span><span style="color: #BBB"> </span>response.data;
+};
+</code></pre></div>
+
+<ul>
+<li>Takes an <code>id</code>, glues it to the URL: <code>...get_product.php?id=3</code>.</li>
+<li>PHP reads that <code>3</code> via <code>$_GET['id']</code>.</li>
+</ul>
+<p><code>get_testimonials</code>, <code>get_users</code> = like <code>get_products</code> (no id). <code>get_user(id)</code> = like <code>get_product(id)</code>.</p>
+<hr />
+<h1 id="part-5-read-endpoints-session-2">PART 5 — READ endpoints (Session 2)</h1>
+<h2 id="51-get_productsphp">5.1 get_products.php</h2>
+<p>After the CORS block + <code>include("connection.php")</code>:</p>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$query  = &quot;SELECT * FROM products&quot;;
+$result = mysqli_query($connect, $query);
+</code></pre></div>
+
+<ul>
+<li><code>SELECT * FROM products</code> — "give me all columns (<code>*</code>) of all rows in products".</li>
+<li><code>mysqli_query</code> runs it. For a SELECT, <code>$result</code> is a <strong>result set</strong> (a cursor pointing at the returned rows), not the data itself yet.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$products = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $products[] = $row;
+}
+</code></pre></div>
+
+<ul>
+<li><code>$products = []</code> — start with an empty array.</li>
+<li><code>mysqli_fetch_assoc($result)</code> — pull the NEXT row as an associative array, e.g. <code>["id"=&gt;"1","title"=&gt;"PS5",...]</code>.</li>
+<li>Each loop pass grabs the next row; when no rows remain it returns <code>null</code>, which is falsy, so the <code>while</code> stops.</li>
+<li><code>$products[] = $row</code> — append the row to the array.</li>
+<li>After the loop, <code>$products</code> holds every product row.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>echo json_encode($products);
+</code></pre></div>
+
+<ul>
+<li>Convert the PHP array to a JSON string and send it. axios receives this.</li>
+</ul>
+<h2 id="52-get_productphp-one-row">5.2 get_product.php (one row)</h2>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$id = $_GET[&#39;id&#39;];
+</code></pre></div>
+
+<ul>
+<li>Read the <code>id</code> from the URL query string (<code>?id=3</code>).</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$query  = &quot;SELECT * FROM products WHERE id = &#39;$id&#39;&quot;;
+$result = mysqli_query($connect, $query);
+$product = mysqli_fetch_assoc($result);
+echo json_encode($product);
+</code></pre></div>
+
+<ul>
+<li><code>WHERE id = '$id'</code> — only the matching row.</li>
+<li>One row expected, so <code>mysqli_fetch_assoc</code> is called once (no loop) → a single object.</li>
+<li><code>json_encode</code> sends <code>{"id":"3",...}</code>.</li>
+</ul>
+<h2 id="53-get_testimonialsphp-get_usersphp">5.3 get_testimonials.php / get_users.php</h2>
+<p>Same loop pattern as <code>get_products.php</code>. </p>
+<p><code>get_users.php</code> has one special trick:</p>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$query = &quot;SELECT id, full_name AS name, email, phone, role, status, city, join_date AS joinDate FROM users&quot;;
+</code></pre></div>
+
+<ul>
+<li>The DB columns are <code>full_name</code> and <code>join_date</code>, but the old React code expects <code>name</code> and <code>joinDate</code>.</li>
+<li><code>full_name AS name</code> — rename the column <strong>in the result</strong> so React's existing code works without changes.</li>
+</ul>
+<h2 id="54-get_userphp-one-row-renamed-columns">5.4 get_user.php (one row, renamed columns)</h2>
+<p>Same as <code>get_product.php</code> but selects one user and renames columns (<code>id_card AS idCard</code>, <code>postal_code AS postalCode</code>, etc.) to match the edit form's field names.</p>
+<hr />
+<h1 id="part-6-the-react-form-wiring-write-session-1">PART 6 — The React form wiring (WRITE, Session 1)</h1>
+<p>Pattern applied to Registration / Contact / UserAdd / UserEdit. Using <strong>Registration.jsx</strong> as the example.</p>
+<h3 id="added-imports-state">Added imports + state</h3>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">import</span><span style="color: #BBB"> </span>{<span style="color: #BBB"> </span>useState<span style="color: #BBB"> </span>}<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">from</span><span style="color: #BBB"> </span><span style="color: #BA2121">&#39;react&#39;</span>;
+<span style="color: #008000; font-weight: bold">import</span><span style="color: #BBB"> </span>{<span style="color: #BBB"> </span>process_registration<span style="color: #BBB"> </span>}<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">from</span><span style="color: #BBB"> </span><span style="color: #BA2121">&#39;../serviceApi&#39;</span>;
+</code></pre></div>
+
+<ul>
+<li><code>useState</code> — React tool to remember a value between renders.</li>
+<li><code>process_registration</code> — the axios function we wrote.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>[serverMessage,<span style="color: #BBB"> </span>setServerMessage]<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span>useState(<span style="color: #BA2121">&#39;&#39;</span>);
+</code></pre></div>
+
+<ul>
+<li>Creates a state variable:</li>
+<li><code>serverMessage</code> = current value (starts empty <code>''</code>).</li>
+<li><code>setServerMessage</code> = the function to change it (changing it re-renders the screen).</li>
+</ul>
+<h3 id="the-submit-function">The submit function</h3>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">async</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">function</span><span style="color: #BBB"> </span>submit(data)<span style="color: #BBB"> </span>{
+</code></pre></div>
+
+<ul>
+<li><code>async</code> — because it will <code>await</code> the network.</li>
+<li><code>data</code> — react-hook-form automatically passes the validated form values here.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">if</span><span style="color: #BBB"> </span>(data.password<span style="color: #BBB"> </span><span style="color: #666">!==</span><span style="color: #BBB"> </span>data.confirmPassword)<span style="color: #BBB"> </span>{<span style="color: #BBB"> </span>alert(<span style="color: #BA2121">&#39;Passwords do not match!&#39;</span>);<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">return</span>;<span style="color: #BBB"> </span>}
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">if</span><span style="color: #BBB"> </span>(<span style="color: #666">!</span>data.agreeTerms)<span style="color: #BBB"> </span>{<span style="color: #BBB"> </span>alert(<span style="color: #BA2121">&#39;You must agree to the terms and conditions.&#39;</span>);<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">return</span>;<span style="color: #BBB"> </span>}
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">if</span><span style="color: #BBB"> </span>(data.accountType<span style="color: #BBB"> </span><span style="color: #666">===</span><span style="color: #BBB"> </span><span style="color: #BA2121">&#39;seller&#39;</span><span style="color: #BBB"> </span><span style="color: #666">&amp;&amp;</span><span style="color: #BBB"> </span><span style="color: #666">!</span>data.businessName)<span style="color: #BBB"> </span>{<span style="color: #BBB"> </span>alert(<span style="color: #BA2121">&#39;Business name is required...&#39;</span>);<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">return</span>;<span style="color: #BBB"> </span>}
+</code></pre></div>
+
+<ul>
+<li>Extra manual checks. <code>!==</code> = not equal. <code>return</code> = stop the function early if a check fails.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">try</span><span style="color: #BBB"> </span>{
+<span style="color: #BBB">    </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>result<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">await</span><span style="color: #BBB"> </span>process_registration(data);
+<span style="color: #BBB">    </span>setServerMessage(result.message);
+<span style="color: #BBB">  </span>}<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">catch</span><span style="color: #BBB"> </span>(error)<span style="color: #BBB"> </span>{
+<span style="color: #BBB">    </span>setServerMessage(<span style="color: #BA2121">&#39;A server error 500 occurred.&#39;</span>);
+<span style="color: #BBB">  </span>}
+}
+</code></pre></div>
+
+<ul>
+<li><code>try { ... } catch { ... }</code> — attempt the risky network call; if it throws, run <code>catch</code> instead of crashing.</li>
+<li><code>await process_registration(data)</code> — send the form to PHP, wait for the reply.</li>
+<li><code>result</code> = the JSON object PHP sent (<code>{success, message}</code>).</li>
+<li><code>setServerMessage(result.message)</code> — store PHP's message → screen re-renders and shows it.</li>
+<li><code>catch</code> — if the server is down/errored, show a fallback message.</li>
+</ul>
+<h3 id="showing-the-message">Showing the message</h3>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>{serverMessage<span style="color: #BBB"> </span><span style="color: #666">&amp;&amp;</span><span style="color: #BBB"> </span>(
+<span style="color: #BBB">  </span>&lt;<span style="color: #008000; font-weight: bold">p</span><span style="color: #BBB"> </span><span style="color: #687822">className</span><span style="color: #666">=</span><span style="color: #BA2121">&quot;text-center mt-3 mb-0&quot;</span>&gt;&lt;<span style="color: #008000; font-weight: bold">strong</span>&gt;{serverMessage}&lt;/<span style="color: #008000; font-weight: bold">strong</span>&gt;&lt;/<span style="color: #008000; font-weight: bold">p</span>&gt;
+)}
+</code></pre></div>
+
+<ul>
+<li><code>{condition &amp;&amp; &lt;jsx&gt;}</code> — React shortcut: "if <code>serverMessage</code> is not empty, render the <code>&lt;p&gt;</code>". Empty string is falsy → nothing shows until there's a message.</li>
+</ul>
+<h3 id="the-bug-we-fixed-zod-schema">The bug we fixed (zod schema)</h3>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>agreeTerms<span style="color: #666">:</span><span style="color: #BBB"> </span>z.<span style="color: #008000; font-weight: bold">boolean</span>().optional(),
+</code></pre></div>
+
+<ul>
+<li>The "I agree" checkbox was registered but <strong>missing from the zod schema</strong>. zod <strong>deletes</strong> any field not in the schema, so <code>data.agreeTerms</code> was always <code>undefined</code> → the check always failed.</li>
+<li>Adding this line keeps the checkbox value in <code>data</code>.</li>
+</ul>
+<h3 id="useredit-extra-sends-the-id">UserEdit extra (sends the id)</h3>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>result<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">await</span><span style="color: #BBB"> </span>process_user_update({<span style="color: #BBB"> </span>...data,<span style="color: #BBB"> </span>id<span style="color: #BBB"> </span>});
+</code></pre></div>
+
+<ul>
+<li><code>{ ...data, id }</code> — copy all form fields (<code>...data</code>) AND add <code>id</code> (from the URL via <code>useParams</code>). PHP needs the id for the <code>WHERE id = ...</code> in its UPDATE.</li>
+</ul>
+<hr />
+<h1 id="part-7-the-react-page-wiring-read-session-2">PART 7 — The React page wiring (READ, Session 2)</h1>
+<p>Pattern applied to all 8 pages. Using <strong>Products.jsx</strong> as the example.</p>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">import</span><span style="color: #BBB"> </span>{<span style="color: #BBB"> </span>useState,<span style="color: #BBB"> </span>useEffect<span style="color: #BBB"> </span>}<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">from</span><span style="color: #BBB"> </span><span style="color: #BA2121">&#39;react&#39;</span>;
+<span style="color: #008000; font-weight: bold">import</span><span style="color: #BBB"> </span>{<span style="color: #BBB"> </span>get_products<span style="color: #BBB"> </span>}<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">from</span><span style="color: #BBB"> </span><span style="color: #BA2121">&#39;../serviceApi&#39;</span>;
+</code></pre></div>
+
+<ul>
+<li><code>useEffect</code> — run code when the page first appears.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>[productsData,<span style="color: #BBB"> </span>setProductsData]<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span>useState([]);
+</code></pre></div>
+
+<ul>
+<li>State starts as <code>[]</code> (empty array). Important: <code>.map()</code> / <code>.filter()</code> on <code>[]</code> is safe; on <code>undefined</code> it would crash before data arrives.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>useEffect(()<span style="color: #BBB"> </span>=&gt;<span style="color: #BBB"> </span>{
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">async</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">function</span><span style="color: #BBB"> </span>load()<span style="color: #BBB"> </span>{
+<span style="color: #BBB">    </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>data<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">await</span><span style="color: #BBB"> </span>get_products();
+<span style="color: #BBB">    </span>setProductsData(data);
+<span style="color: #BBB">  </span>}
+<span style="color: #BBB">  </span>load();
+},<span style="color: #BBB"> </span>[]);
+</code></pre></div>
+
+<ul>
+<li><code>useEffect(fn, [])</code> — run <code>fn</code> <strong>once</strong>, right after first render. The empty <code>[]</code> (dependency list) means "never run again".</li>
+<li>Why the inner <code>async function load()</code>? The <code>useEffect</code> callback itself <strong>cannot</strong> be <code>async</code>, so we define an async helper inside and call it. This lets us use <code>await</code> (the same style as the form submit functions).</li>
+<li><code>await get_products()</code> — start the fetch and pause until the JSON array comes back.</li>
+<li><code>setProductsData(data)</code> — store it → React re-renders → the list below now has real rows.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>&lt;<span style="color: #008000; font-weight: bold">span</span>&gt;Rs.<span style="color: #BBB"> </span>{<span style="color: #008000">Number</span>(product.price).toLocaleString()}&lt;/<span style="color: #008000; font-weight: bold">span</span>&gt;
+</code></pre></div>
+
+<ul>
+<li><strong>Critical detail:</strong> MySQL/PHP returns numbers as <strong>strings</strong> (<code>"12500"</code>).</li>
+<li><code>"12500".toLocaleString()</code> does NOT add commas (it's a string method, not a number method).</li>
+<li><code>Number("12500")</code> converts it to the real number <code>12500</code>, then <code>.toLocaleString()</code> → <code>"12,500"</code>.</li>
+<li>That's why every displayed price is wrapped in <code>Number(...)</code>.</li>
+</ul>
+<h3 id="per-page-differences">Per-page differences</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What's different</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LandingPage.jsx</strong></td>
+<td>Two states + two fetches (<code>get_products</code> and <code>get_testimonials</code>) in one <code>useEffect</code>.</td>
+</tr>
+<tr>
+<td><strong>ProductDetail.jsx</strong></td>
+<td><code>const { id } = useParams()</code> reads the id from the URL. <code>useState(null)</code> (one product, starts null). <code>useEffect(..., [id])</code> re-fetches if the id changes. While <code>product</code> is null it shows "Loading product...".</td>
+</tr>
+<tr>
+<td><strong>ProductsList.jsx</strong> (admin)</td>
+<td><code>useState([])</code> + <code>useEffect</code> fetch. Delete button still only removes from local state (not the DB).</td>
+</tr>
+<tr>
+<td><strong>UsersList.jsx</strong> (admin)</td>
+<td><code>get_users()</code>; the <code>AS name/joinDate</code> renames mean the table code is unchanged.</td>
+</tr>
+<tr>
+<td><strong>Dashboard.jsx</strong> (admin)</td>
+<td>Fetches products + users only to count them (<code>.length</code>) for the stat cards.</td>
+</tr>
+<tr>
+<td><strong>UserEdit.jsx</strong></td>
+<td><code>get_user(id).then(user =&gt; reset({...}))</code> — <code>reset</code> fills every form field with the DB values. Password stays as the <code>********</code> placeholder.</td>
+</tr>
+<tr>
+<td><strong>ProductEdit.jsx</strong></td>
+<td><code>get_product(id)</code> then <code>reset({...})</code>. No save (it has an image field → skipped per the rule).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="part-7b-login-validation-two-layers">PART 7B — Login (validation, two layers)</h1>
+<p>Login is special: it does NOT save data — it <strong>reads</strong> the users table to check if the email + password match. Two layers of validation:
+1. <strong>zod</strong> (client) — checks the email looks valid and password is long enough. Bad format = it never even submits.
+2. <strong>database</strong> (server) — checks the email + password actually exist together in the <code>users</code> table.</p>
+<h2 id="login_processingphp">login_processing.php</h2>
+<p>After the usual CORS block + <code>include("connection.php")</code> + reading the JSON body:</p>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>if (isset($data-&gt;email) &amp;&amp; isset($data-&gt;password)) {
+    $email    = $data-&gt;email;
+    $password = $data-&gt;password;
+</code></pre></div>
+
+<ul>
+<li>Make sure both were sent, then copy them out.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>    $query  = &quot;SELECT * FROM users WHERE email = &#39;$email&#39; AND user_password = &#39;$password&#39;&quot;;
+    $result = mysqli_query($connect, $query);
+</code></pre></div>
+
+<ul>
+<li><code>SELECT * FROM users WHERE email = ... AND user_password = ...</code> — ask the DB: "is there a row with BOTH this email AND this password?".</li>
+<li><code>AND</code> = both conditions must be true.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>    if (mysqli_num_rows($result) == 1) {
+        $user = mysqli_fetch_assoc($result);
+        echo json_encode([
+            &quot;success&quot; =&gt; true,
+            &quot;message&quot; =&gt; &quot;Login successful. Welcome back, &quot; . $user[&quot;full_name&quot;] . &quot;.&quot;,
+            &quot;role&quot;    =&gt; $user[&quot;role&quot;],
+            &quot;name&quot;    =&gt; $user[&quot;full_name&quot;]
+        ]);
+    }
+</code></pre></div>
+
+<ul>
+<li><code>mysqli_num_rows($result)</code> — how many rows matched. <code>== 1</code> = "exactly one match" = correct credentials.</li>
+<li>Read that row, send back <code>success:true</code> plus the user's <code>role</code> (so React knows where to send them) and name.</li>
+</ul>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>    } else {
+        echo json_encode([&quot;success&quot; =&gt; false, &quot;message&quot; =&gt; &quot;Invalid email or password.&quot;]);
+    }
+}
+</code></pre></div>
+
+<ul>
+<li><code>== 1</code> was false (0 matches) → wrong email or password → send the failure message.</li>
+</ul>
+<h2 id="serviceapijs-process_login">serviceApi.js — process_login</h2>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">export</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>process_login<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">async</span><span style="color: #BBB"> </span>(data)<span style="color: #BBB"> </span>=&gt;<span style="color: #BBB"> </span>{
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>response<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">await</span><span style="color: #BBB"> </span>axios.post(
+<span style="color: #BBB">    </span><span style="color: #BA2121">&quot;http://localhost/yaqeen-backend/login_processing.php&quot;</span>,
+<span style="color: #BBB">    </span>data
+<span style="color: #BBB">  </span>);
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">return</span><span style="color: #BBB"> </span>response.data;
+};
+</code></pre></div>
+
+<ul>
+<li>Same shape as the other POST functions: send the typed email+password, get back <code>{success, message, role}</code>.</li>
+</ul>
+<h2 id="loginjsx-the-submit">Login.jsx — the submit</h2>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">async</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">function</span><span style="color: #BBB"> </span>submit(data)<span style="color: #BBB"> </span>{
+<span style="color: #BBB">  </span><span style="color: #008000; font-weight: bold">try</span><span style="color: #BBB"> </span>{
+<span style="color: #BBB">    </span><span style="color: #008000; font-weight: bold">const</span><span style="color: #BBB"> </span>result<span style="color: #BBB"> </span><span style="color: #666">=</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">await</span><span style="color: #BBB"> </span>process_login(data);
+
+<span style="color: #BBB">    </span><span style="color: #008000; font-weight: bold">if</span><span style="color: #BBB"> </span>(result.success)<span style="color: #BBB"> </span>{
+<span style="color: #BBB">      </span>login(data.email);
+<span style="color: #BBB">      </span><span style="color: #008000; font-weight: bold">if</span><span style="color: #BBB"> </span>(result.role<span style="color: #BBB"> </span><span style="color: #666">===</span><span style="color: #BBB"> </span><span style="color: #BA2121">&#39;Admin&#39;</span>)<span style="color: #BBB"> </span>{
+<span style="color: #BBB">        </span>navigate(<span style="color: #BA2121">&#39;/admin&#39;</span>);
+<span style="color: #BBB">      </span>}<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">else</span><span style="color: #BBB"> </span>{
+<span style="color: #BBB">        </span>navigate(<span style="color: #BA2121">&#39;/&#39;</span>);
+<span style="color: #BBB">      </span>}
+<span style="color: #BBB">    </span>}<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">else</span><span style="color: #BBB"> </span>{
+<span style="color: #BBB">      </span>setServerMessage(result.message);
+<span style="color: #BBB">    </span>}
+<span style="color: #BBB">  </span>}<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">catch</span><span style="color: #BBB"> </span>(error)<span style="color: #BBB"> </span>{
+<span style="color: #BBB">    </span>setServerMessage(<span style="color: #BA2121">&#39;A server error 500 occurred.&#39;</span>);
+<span style="color: #BBB">  </span>}
+}
+</code></pre></div>
+
+<ul>
+<li><code>await process_login(data)</code> — ask PHP to check the credentials.</li>
+<li><code>if (result.success)</code> — DB found a match:</li>
+<li><code>login(data.email)</code> — store the email in <code>AuthContext</code> (marks the user as logged in).</li>
+<li><code>if (result.role === 'Admin')</code> — send admins to <code>/admin</code>, everyone else to the home page <code>/</code>.</li>
+<li><strong>Important:</strong> the redirect uses the <code>role</code> from the <strong>database</strong>, not the dropdown on the form — so you can't fake being admin by picking it in the menu.</li>
+<li><code>else</code> — no match → show the red "Invalid email or password" under the form.</li>
+<li><code>catch</code> — server down/errored → fallback message.</li>
+</ul>
+<h2 id="a-note-on-the-read-style-sirs-level">A note on the read style (sir's level)</h2>
+<p>The page fetches use an inner <code>async function load() { ... } load();</code> inside <code>useEffect</code>. An earlier version used <code>.then()</code> plus an <code>Array.isArray()</code> safety guard, but those were removed to stay exactly at the taught toolbox (<code>useEffect</code> + <code>await</code>, same as the form submits). Trade-off: if you open a page <strong>before</strong> MySQL is running, it errors instead of showing an empty list — so always start XAMPP MySQL first.</p>
+<h2 id="why-numberproductprice">Why <code>Number(product.price)</code>?</h2>
+<p>MySQL/PHP sends numbers back as <strong>text strings</strong> (<code>"12500"</code>). The original code called <code>price.toLocaleString()</code> to add the thousands commas, but that only works on a real number. <code>Number("12500")</code> turns the string into the number <code>12500</code>, then <code>.toLocaleString()</code> → <code>"12,500"</code>. It's plain JavaScript, kept only so the prices still show commas like the original static version.</p>
+<hr />
+<h1 id="part-8-the-database-sql">PART 8 — The database (SQL)</h1>
+<h3 id="users-table-session-1">users table (Session 1)</h3>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">CREATE</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">TABLE</span><span style="color: #BBB"> </span>users<span style="color: #BBB"> </span>(
+<span style="color: #BBB">    </span>id<span style="color: #BBB"> </span><span style="color: #008000">INT</span><span style="color: #BBB"> </span>AUTO_INCREMENT<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">PRIMARY</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">KEY</span>,
+<span style="color: #BBB">    </span>account_type<span style="color: #BBB"> </span><span style="color: #008000">VARCHAR</span>(<span style="color: #666">20</span>),<span style="color: #BBB"> </span>full_name<span style="color: #BBB"> </span><span style="color: #008000">VARCHAR</span>(<span style="color: #666">100</span>),<span style="color: #BBB"> </span>email<span style="color: #BBB"> </span><span style="color: #008000">VARCHAR</span>(<span style="color: #666">100</span>),
+<span style="color: #BBB">    </span>...
+);
+</code></pre></div>
+
+<ul>
+<li><code>CREATE TABLE users (...)</code> — make a new table.</li>
+<li><code>id INT AUTO_INCREMENT PRIMARY KEY</code> — a number id that the DB fills in automatically (1,2,3...) and that uniquely identifies each row.</li>
+<li><code>VARCHAR(100)</code> — a text column up to 100 characters. <code>TEXT</code> = longer text. <code>INT</code> = whole number. <code>DECIMAL(2,1)</code> = number like 4.8.</li>
+</ul>
+<h3 id="contacts-table-alter-session-1">contacts table + ALTER (Session 1)</h3>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">ALTER</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">TABLE</span><span style="color: #BBB"> </span>users
+<span style="color: #BBB">    </span><span style="color: #008000; font-weight: bold">ADD</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">COLUMN</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">role</span><span style="color: #BBB"> </span><span style="color: #008000">VARCHAR</span>(<span style="color: #666">20</span>),
+<span style="color: #BBB">    </span><span style="color: #008000; font-weight: bold">ADD</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">COLUMN</span><span style="color: #BBB"> </span>status<span style="color: #BBB"> </span><span style="color: #008000">VARCHAR</span>(<span style="color: #666">20</span>),
+<span style="color: #BBB">    </span><span style="color: #008000; font-weight: bold">ADD</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">COLUMN</span><span style="color: #BBB"> </span>join_date<span style="color: #BBB"> </span><span style="color: #008000">VARCHAR</span>(<span style="color: #666">20</span>);
+</code></pre></div>
+
+<ul>
+<li><code>ALTER TABLE users ADD COLUMN ...</code> — add new columns to an EXISTING table (the admin user forms needed role/status/join_date).</li>
+</ul>
+<h3 id="products-testimonials-tables-seed-session-2">products + testimonials tables + seed (Session 2)</h3>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #008000; font-weight: bold">TRUNCATE</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">TABLE</span><span style="color: #BBB"> </span>products;
+<span style="color: #008000; font-weight: bold">INSERT</span><span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">INTO</span><span style="color: #BBB"> </span>products<span style="color: #BBB"> </span>(id,<span style="color: #BBB"> </span>title,<span style="color: #BBB"> </span>price,<span style="color: #BBB"> </span>...)<span style="color: #BBB"> </span><span style="color: #008000; font-weight: bold">VALUES</span><span style="color: #BBB"> </span>(<span style="color: #666">1</span>,<span style="color: #BBB"> </span><span style="color: #BA2121">&#39;PS5...&#39;</span>,<span style="color: #BBB"> </span><span style="color: #666">12500</span>,<span style="color: #BBB"> </span>...),<span style="color: #BBB"> </span>(<span style="color: #666">2</span>,<span style="color: #BBB"> </span>...),<span style="color: #BBB"> </span>...;
+</code></pre></div>
+
+<ul>
+<li><code>TRUNCATE TABLE products</code> — empty the table first (so re-running doesn't duplicate).</li>
+<li>One big <code>INSERT ... VALUES (...),(...),(...)</code> — add many rows at once.</li>
+<li><code>\`condition\</code> and <code>\`text\</code> are wrapped in backticks because those words are reserved in MySQL.</li>
+</ul>
+<h3 id="run_seedphp-the-seeder">run_seed.php (the seeder)</h3>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>$sql = file_get_contents(&quot;seed_data.sql&quot;);
+if (mysqli_multi_query($connect, $sql)) { ... }
+</code></pre></div>
+
+<ul>
+<li><code>file_get_contents("seed_data.sql")</code> — read the whole SQL file into a string.</li>
+<li><code>mysqli_multi_query</code> — run MANY SQL statements separated by <code>;</code> in one go (normal <code>mysqli_query</code> only runs one).</li>
+<li>Used because <code>seed_data.sql</code> has many <code>CREATE</code>/<code>INSERT</code> statements.</li>
+</ul>
+<hr />
+<h1 id="part-9-full-request-lifecycle-putting-it-together">PART 9 — Full request lifecycle (putting it together)</h1>
+<p><strong>Example: opening the Products page.</strong></p>
+<ol>
+<li>Browser loads <code>Products.jsx</code>. State <code>productsData = []</code>. Page briefly shows "0 products".</li>
+<li><code>useEffect</code> fires once → calls <code>get_products()</code>.</li>
+<li><code>get_products</code> runs <code>axios.get("http://localhost/yaqeen-backend/get_products.php")</code>.</li>
+<li>Apache runs <code>get_products.php</code>:</li>
+<li>CORS headers sent.</li>
+<li><code>include connection.php</code> → opens MySQL.</li>
+<li><code>SELECT * FROM products</code> → MySQL returns 8 rows.</li>
+<li>loop builds a PHP array → <code>json_encode</code> → <code>echo</code> sends JSON text.</li>
+<li>axios receives the JSON, parses it to a JS array, returns it as <code>response.data</code>.</li>
+<li><code>.then((data) =&gt; setProductsData(data))</code> stores the array in state.</li>
+<li>State change → React re-renders → <code>.filter().map()</code> draws 8 product cards with <code>Number(price)</code> formatted.</li>
+</ol>
+<p><strong>Example: submitting the Registration form.</strong></p>
+<ol>
+<li>User fills form → clicks Create Account.</li>
+<li>react-hook-form + zod validate. If invalid, errors show and submit never runs.</li>
+<li><code>submit(data)</code> runs → <code>await process_registration(data)</code>.</li>
+<li><code>axios.post(url, data)</code> sends JSON to <code>register_processing.php</code>.</li>
+<li>PHP: read body → <code>json_decode</code> → <code>INSERT INTO users ...</code> → MySQL adds a row → <code>echo</code> <code>{success, message}</code>.</li>
+<li>axios returns it → <code>setServerMessage(result.message)</code> → green message shows under the form.</li>
+<li>The new row is visible in phpMyAdmin (and on the admin Users list, which reads from the same table).</li>
+</ol>
+<hr />
+<h1 id="part-10-vocabulary-cheat-sheet">PART 10 — Vocabulary cheat-sheet</h1>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>axios.get / .post</code></td>
+<td>send an HTTP request from React</td>
+</tr>
+<tr>
+<td><code>useEffect(fn, [])</code></td>
+<td>run <code>fn</code> once when the page loads</td>
+</tr>
+<tr>
+<td><code>useState(x)</code></td>
+<td>remember a value; changing it re-renders</td>
+</tr>
+<tr>
+<td><code>.then(...)</code></td>
+<td>"when the promise finishes, do this"</td>
+</tr>
+<tr>
+<td><code>await</code></td>
+<td>pause until the async thing finishes</td>
+</tr>
+<tr>
+<td><code>include</code> (PHP)</td>
+<td>paste another PHP file's code here</td>
+</tr>
+<tr>
+<td><code>$_GET['id']</code></td>
+<td>read a value from the URL (<code>?id=...</code>)</td>
+</tr>
+<tr>
+<td><code>php://input</code></td>
+<td>the raw POST body (the JSON axios sent)</td>
+</tr>
+<tr>
+<td><code>json_decode</code> / <code>json_encode</code></td>
+<td>JSON text → PHP object / PHP → JSON text</td>
+</tr>
+<tr>
+<td><code>mysqli_query</code></td>
+<td>run one SQL command</td>
+</tr>
+<tr>
+<td><code>mysqli_fetch_assoc</code></td>
+<td>get the next row as an array</td>
+</tr>
+<tr>
+<td><code>INSERT / SELECT / UPDATE</code></td>
+<td>add / read / change rows</td>
+</tr>
+<tr>
+<td><code>WHERE id = ...</code></td>
+<td>target a specific row</td>
+</tr>
+<tr>
+<td><code>AS name</code></td>
+<td>rename a column in the result</td>
+</tr>
+<tr>
+<td>CORS headers</td>
+<td>let a different port call this PHP</td>
+</tr>
+<tr>
+<td><code>Number(...)</code></td>
+<td>turn a string like "12500" into the number 12500</td>
+</tr>
+<tr>
+<td>```</td>
+<td></td>
+</tr>
+</tbody>
+</table></body></html>

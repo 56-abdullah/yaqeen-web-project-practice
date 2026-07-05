@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Yaqeen — React + XAMPP Integration Task Report</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.55;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 32px 28px;
+    font-size: 13.5px;
+  }
+  h1 { font-size: 26px; color: #0d3b66; margin-bottom: 4px; }
+  h2 {
+    font-size: 19px; color: #0d3b66; margin-top: 30px;
+    border-bottom: 2px solid #0d3b66; padding-bottom: 5px;
+  }
+  h3 { font-size: 15.5px; color: #14467a; margin-top: 20px; }
+  .sub { color: #555; margin-top: 0; }
+  code {
+    background: #eef2f7; padding: 1px 5px; border-radius: 4px;
+    font-family: Consolas, "Courier New", monospace; font-size: 12px;
+    color: #b8004a;
+  }
+  pre {
+    background: #1e1e2e; color: #e6e6e6; padding: 12px 14px;
+    border-radius: 6px; overflow-x: auto; font-size: 11.5px;
+    font-family: Consolas, "Courier New", monospace; line-height: 1.45;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  pre .c { color: #6a9955; }   /* comment */
+  pre .k { color: #569cd6; }   /* keyword */
+  pre .s { color: #ce9178; }   /* string */
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 12.5px; }
+  th, td { border: 1px solid #c9d4e0; padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: #0d3b66; color: #fff; }
+  tr:nth-child(even) td { background: #f4f7fb; }
+  .note { background: #fff8e1; border-left: 4px solid #f0ad4e; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+  .ok   { background: #e8f5e9; border-left: 4px solid #43a047; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+  .step-num {
+    display: inline-block; background: #0d3b66; color: #fff;
+    width: 24px; height: 24px; border-radius: 50%; text-align: center;
+    line-height: 24px; font-weight: bold; margin-right: 8px; font-size: 13px;
+  }
+  .flow { font-family: Consolas, monospace; background: #eef2f7; padding: 14px; border-radius: 6px; font-size: 12px; }
+  footer { margin-top: 40px; color: #888; font-size: 11px; border-top: 1px solid #ddd; padding-top: 10px; }
+  .pagebreak { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>Yaqeen Marketplace</h1>
+<p class="sub"><strong>Task:</strong> Connect React forms to a XAMPP (PHP + MySQL) backend using axios — the front-end&harr;back-end <em>integration</em>. Text forms only (image-upload forms skipped).</p>
+<p class="sub"><strong>Stack:</strong> React 19 + Vite + react-hook-form + zod (front) &nbsp;|&nbsp; Apache + PHP + MySQL via XAMPP (back) &nbsp;|&nbsp; axios (bridge)</p>
+
+<div class="ok"><strong>Result:</strong> Registration, Contact, Admin Add User and Admin Edit User forms now save / update their data in the MySQL database <code>yaqeen_web_project</code>.</div>
+
+<h2>0. The Big Picture — how the pieces talk</h2>
+<div class="flow">
+React form (browser, http://localhost:5173)<br>
+&nbsp;&nbsp;&nbsp;│ &nbsp; user fills form &rarr; react-hook-form + zod validate<br>
+&nbsp;&nbsp;&nbsp;▼ &nbsp; axios.post( url, data )  &mdash; sends JSON<br>
+PHP script (Apache, http://localhost, port 80)<br>
+&nbsp;&nbsp;&nbsp;│ &nbsp; reads JSON body &rarr; builds SQL &rarr; runs query<br>
+&nbsp;&nbsp;&nbsp;▼<br>
+MySQL database "yaqeen_web_project" (table users / contacts)<br>
+&nbsp;&nbsp;&nbsp;│ &nbsp; returns { success, message }<br>
+&nbsp;&nbsp;&nbsp;▼<br>
+React shows the message under the form
+</div>
+
+<h2>1. Start the XAMPP servers</h2>
+<p>Open <strong>XAMPP Control Panel</strong> and press <strong>Start</strong> on:</p>
+<ul>
+  <li><strong>Apache</strong> → runs PHP (ports 80, 443).</li>
+  <li><strong>MySQL</strong> → the database (port 3306).</li>
+</ul>
+<div class="note">
+<strong>Problem we hit:</strong> MySQL would not start —
+<code>Port 3306 in use by "Unable to open process"</code>.<br>
+<strong>Cause:</strong> a separate <strong>MySQL80</strong> Windows service was already using port 3306.<br>
+<strong>Fix:</strong> Windows <em>Services</em> → <strong>MySQL80</strong> → <strong>Stop</strong> (optionally set Startup type = Manual). Then XAMPP MySQL started (turned green).
+</div>
+
+<h2>2. Create the database &amp; first table (phpMyAdmin)</h2>
+<p>Open <code>http://localhost/phpmyadmin</code>. A database <code>yaqeen_web_project</code> already existed; we added the <code>users</code> table. SQL tab &rarr; paste &rarr; <strong>Go</strong>:</p>
+<pre><span class="k">CREATE TABLE</span> users (
+    id <span class="k">INT</span> AUTO_INCREMENT <span class="k">PRIMARY KEY</span>,
+    account_type      <span class="k">VARCHAR</span>(20),
+    full_name         <span class="k">VARCHAR</span>(100),
+    email             <span class="k">VARCHAR</span>(100),
+    phone             <span class="k">VARCHAR</span>(20),
+    id_card           <span class="k">VARCHAR</span>(20),
+    city              <span class="k">VARCHAR</span>(50),
+    postal_code       <span class="k">VARCHAR</span>(10),
+    address           <span class="k">TEXT</span>,
+    business_name     <span class="k">VARCHAR</span>(100),
+    business_category <span class="k">VARCHAR</span>(50),
+    user_password     <span class="k">VARCHAR</span>(100)
+);</pre>
+
+<h2>3. Install axios in the React project</h2>
+<p>In the project folder terminal:</p>
+<pre>npm install axios</pre>
+<p>This is the library that lets React send HTTP POST requests to PHP.</p>
+
+<div class="pagebreak"></div>
+<h2>4. Backend folder + connection file</h2>
+<p>Created folder <code>D:\xampp\htdocs\yaqeen-backend\</code> (everything in <code>htdocs</code> is served by Apache).</p>
+<h3>connection.php — opens the MySQL connection</h3>
+<pre><span class="k">&lt;?php</span>
+    <span class="c">// XAMPP defaults: host=localhost, user=root, password="" (empty).</span>
+    $connect = mysqli_connect(<span class="s">"localhost"</span>, <span class="s">"root"</span>, <span class="s">""</span>, <span class="s">"yaqeen_web_project"</span>);
+
+    <span class="k">if</span> (!$connect) {
+        <span class="k">die</span>(<span class="s">"Connection failed: "</span> . mysqli_connect_error());
+    }
+<span class="k">?&gt;</span></pre>
+
+<h2>5. The registration backend (sir's pattern)</h2>
+<h3>register_processing.php</h3>
+<pre><span class="k">&lt;?php</span>
+    <span class="c">// CORS headers: let the React app (different port) call this script.</span>
+    header(<span class="s">"Access-Control-Allow-Origin: *"</span>);
+    header(<span class="s">"Access-Control-Allow-Methods: POST, GET, OPTIONS"</span>);
+    header(<span class="s">"Access-Control-Allow-Headers: Content-Type"</span>);
+
+    <span class="c">// Browser sends a preflight OPTIONS request first — answer OK and stop.</span>
+    <span class="k">if</span> ($_SERVER[<span class="s">'REQUEST_METHOD'</span>] == <span class="s">'OPTIONS'</span>) {
+        http_response_code(200);
+        <span class="k">exit</span>();
+    }
+
+    include(<span class="s">"connection.php"</span>);
+
+    <span class="c">// axios sends JSON in the body — read it and decode to a PHP object.</span>
+    $rawData = file_get_contents(<span class="s">"php://input"</span>);
+    $data = json_decode($rawData);
+
+    <span class="k">if</span> (isset($data->email) && isset($data->password)) {
+        $accountType = $data->accountType;
+        $fullName    = $data->fullName;
+        $email       = $data->email;
+        <span class="c">// ...the other fields...</span>
+        $password    = $data->password;
+
+        $query = <span class="s">"INSERT INTO users
+                  (account_type, full_name, email, phone, id_card, city,
+                   postal_code, address, business_name, business_category, user_password)
+                  VALUES
+                  ('$accountType','$fullName','$email','$phone','$idCard','$city',
+                   '$postalCode','$address','$businessName','$businessCategory','$password')"</span>;
+
+        $process_query = mysqli_query($connect, $query);
+
+        <span class="k">if</span> ($process_query) {
+            <span class="k">echo</span> json_encode([<span class="s">"success"</span>=>true, <span class="s">"message"</span>=><span class="s">"Account created successfully for $fullName."</span>]);
+        } <span class="k">else</span> {
+            <span class="k">echo</span> json_encode([<span class="s">"success"</span>=>false, <span class="s">"message"</span>=><span class="s">"Database insertion failed: "</span>.mysqli_error($connect)]);
+        }
+    } <span class="k">else</span> {
+        <span class="k">echo</span> json_encode([<span class="s">"success"</span>=>false, <span class="s">"message"</span>=><span class="s">"No data was received by the server."</span>]);
+    }
+<span class="k">?&gt;</span></pre>
+
+<h2>6. The axios service file (React side)</h2>
+<p>Created <code>src/serviceApi.js</code> — one function per form. Each posts to its PHP file and returns the response.</p>
+<pre><span class="k">import</span> axios <span class="k">from</span> <span class="s">"axios"</span>;
+
+<span class="c">// Apache here runs on port 80, so the URL is just localhost (no :8080).</span>
+<span class="k">export const</span> process_registration = <span class="k">async</span> (data) => {
+  <span class="k">const</span> response = <span class="k">await</span> axios.post(
+    <span class="s">"http://localhost/yaqeen-backend/register_processing.php"</span>, data);
+  <span class="k">return</span> response.data;
+};
+
+<span class="k">export const</span> process_contact      = <span class="k">async</span> (data) => { <span class="c">/* contact_processing.php */</span> };
+<span class="k">export const</span> process_user_add     = <span class="k">async</span> (data) => { <span class="c">/* user_add_processing.php */</span> };
+<span class="k">export const</span> process_user_update  = <span class="k">async</span> (data) => { <span class="c">/* user_update_processing.php */</span> };</pre>
+
+<div class="pagebreak"></div>
+<h2>7. Wire the Registration form</h2>
+<p>In <code>src/components/Registration.jsx</code> we changed 3 things:</p>
+<h3>a) imports + state</h3>
+<pre><span class="k">import</span> { useState } <span class="k">from</span> <span class="s">'react'</span>;
+<span class="k">import</span> { process_registration } <span class="k">from</span> <span class="s">'../serviceApi'</span>;
+<span class="c">// inside component:</span>
+<span class="k">const</span> [serverMessage, setServerMessage] = useState(<span class="s">''</span>);</pre>
+<h3>b) submit becomes async &amp; calls the API</h3>
+<pre><span class="k">async function</span> submit(data) {
+  <span class="c">// ...existing validation alerts stay...</span>
+  <span class="k">try</span> {
+    <span class="k">const</span> result = <span class="k">await</span> process_registration(data);
+    setServerMessage(result.message);
+  } <span class="k">catch</span> (error) {
+    setServerMessage(<span class="s">'A server error 500 occurred.'</span>);
+  }
+}</pre>
+<h3>c) show the message under the form</h3>
+<pre>{serverMessage && (
+  &lt;p className=<span class="s">"text-center mt-3 mb-0"</span>&gt;&lt;strong&gt;{serverMessage}&lt;/strong&gt;&lt;/p&gt;
+)}</pre>
+
+<div class="note">
+<strong>Bug we fixed:</strong> the "I agree to terms" checkbox was registered but <strong>not in the zod schema</strong>.
+zod <em>strips</em> any field not declared in the schema, so <code>data.agreeTerms</code> was always
+<code>undefined</code> → the check failed even when ticked. Fix = add it to the schema:
+<pre style="margin-top:8px;">agreeTerms: z.boolean().optional(),</pre>
+</div>
+
+<h2>8. The other three forms (same recipe)</h2>
+<p>Each got the exact same 3-step treatment (import + state, async submit, show message), plus its own PHP file.</p>
+<table>
+  <tr><th>Form (file)</th><th>axios fn</th><th>PHP file</th><th>SQL action</th></tr>
+  <tr><td>Registration.jsx</td><td>process_registration</td><td>register_processing.php</td><td>INSERT users</td></tr>
+  <tr><td>Contact.jsx</td><td>process_contact</td><td>contact_processing.php</td><td>INSERT contacts</td></tr>
+  <tr><td>admin/UserAdd.jsx</td><td>process_user_add</td><td>user_add_processing.php</td><td>INSERT users</td></tr>
+  <tr><td>admin/UserEdit.jsx</td><td>process_user_update</td><td>user_update_processing.php</td><td>UPDATE users WHERE id</td></tr>
+</table>
+<p><strong>Edit User</strong> also sends the row <code>id</code> (taken from the URL) so PHP knows which row to update:</p>
+<pre><span class="k">const</span> result = <span class="k">await</span> process_user_update({ ...data, id });</pre>
+<p>and the PHP uses it: <code>UPDATE users SET ... WHERE id = '$id'</code>. The password is only overwritten if a new one is typed (the placeholder <code>********</code> is ignored).</p>
+
+<h2>9. Extra tables for the new forms</h2>
+<p>Run once in phpMyAdmin (database <code>yaqeen_web_project</code>):</p>
+<pre><span class="c">-- 1. Contact messages</span>
+<span class="k">CREATE TABLE</span> contacts (
+    id <span class="k">INT</span> AUTO_INCREMENT <span class="k">PRIMARY KEY</span>,
+    full_name <span class="k">VARCHAR</span>(100), email <span class="k">VARCHAR</span>(100), phone <span class="k">VARCHAR</span>(20),
+    subject <span class="k">VARCHAR</span>(150), message_type <span class="k">VARCHAR</span>(30), priority <span class="k">VARCHAR</span>(20),
+    company <span class="k">VARCHAR</span>(100), message <span class="k">TEXT</span>
+);
+
+<span class="c">-- 2. Extra columns the admin user forms need</span>
+<span class="k">ALTER TABLE</span> users
+    <span class="k">ADD COLUMN</span> role <span class="k">VARCHAR</span>(20),
+    <span class="k">ADD COLUMN</span> status <span class="k">VARCHAR</span>(20),
+    <span class="k">ADD COLUMN</span> join_date <span class="k">VARCHAR</span>(20);</pre>
+
+<div class="pagebreak"></div>
+<h2>10. What was SKIPPED (on purpose)</h2>
+<table>
+  <tr><th>Form</th><th>Why skipped</th></tr>
+  <tr><td>Product Add / Product Edit</td><td>They upload an <strong>image</strong> — sir said don't connect image-saving forms.</td></tr>
+  <tr><td>Login</td><td>Needs to <em>read</em> &amp; check the DB (SELECT), not save. Not chosen this round.</td></tr>
+  <tr><td>Requests</td><td>Just a table with Approve/Reject buttons — no form data to save.</td></tr>
+</table>
+
+<h2>11. How to run it next time</h2>
+<table>
+  <tr><th>#</th><th>Action</th></tr>
+  <tr><td>1</td><td>XAMPP Control Panel → Start <strong>Apache</strong> + <strong>MySQL</strong> (stop MySQL80 first if 3306 is busy).</td></tr>
+  <tr><td>2</td><td>In project folder: <code>npm run dev</code> → opens <code>http://localhost:5173</code>.</td></tr>
+  <tr><td>3</td><td>Fill any wired form → submit → green message → check the table in phpMyAdmin.</td></tr>
+</table>
+
+<h2>12. Files created / changed</h2>
+<table>
+  <tr><th>Location</th><th>File</th><th>New / Changed</th></tr>
+  <tr><td>D:\xampp\htdocs\yaqeen-backend</td><td>connection.php</td><td>new</td></tr>
+  <tr><td>D:\xampp\htdocs\yaqeen-backend</td><td>register_processing.php</td><td>new</td></tr>
+  <tr><td>D:\xampp\htdocs\yaqeen-backend</td><td>contact_processing.php</td><td>new</td></tr>
+  <tr><td>D:\xampp\htdocs\yaqeen-backend</td><td>user_add_processing.php</td><td>new</td></tr>
+  <tr><td>D:\xampp\htdocs\yaqeen-backend</td><td>user_update_processing.php</td><td>new</td></tr>
+  <tr><td>src/</td><td>serviceApi.js</td><td>new (4 axios functions)</td></tr>
+  <tr><td>src/components/</td><td>Registration.jsx</td><td>changed (state + async submit + message + schema fix)</td></tr>
+  <tr><td>src/pages/</td><td>Contact.jsx</td><td>changed</td></tr>
+  <tr><td>src/pages/admin/</td><td>UserAdd.jsx</td><td>changed</td></tr>
+  <tr><td>src/pages/admin/</td><td>UserEdit.jsx</td><td>changed (also sends id)</td></tr>
+</table>
+
+<div class="note">
+<strong>Two things to know (not bugs):</strong><br>
+1. <strong>Plain-text passwords</strong> &amp; SQL built by sticking text straight into the query — same as sir's classroom example. Fine for local learning; real apps use hashing + prepared statements (beyond current level).<br>
+2. <strong>Duplicates allowed</strong> — clicking submit twice inserts two rows. No "unique email" rule yet (that's a later topic).
+</div>
+
+<footer>
+Yaqeen Marketplace — React + XAMPP integration task. Generated for study reference.
+</footer>
+
+</body>
+</html>

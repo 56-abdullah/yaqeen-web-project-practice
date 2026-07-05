@@ -1,13 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
-import productsData from '../../data/productsData.json';
+import { get_products, process_product_delete } from '../../serviceApi';
 
 function ProductsList() {
-  const [products, setProducts] = useState(productsData);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [products, setProducts] = useState([]);
+  const { register, watch } = useForm();
+  const searchTerm = watch('searchTerm') || '';
 
-  function handleDelete(productId) {
+  // Load products from the database when the page opens.
+  useEffect(() => {
+    async function load() {
+      const data = await get_products();
+      setProducts(data);
+    }
+    load();
+  }, []);
+
+  async function handleDelete(productId) {
     if (window.confirm('Are you sure you want to delete this product?')) {
+      // Delete from the database first, then remove from the screen.
+      await process_product_delete(productId);
       setProducts(products.filter(p => p.id !== productId));
       alert('Product deleted successfully!');
     }
@@ -27,7 +40,7 @@ function ProductsList() {
           <p className="text-muted mb-0">Manage all products in the marketplace</p>
         </div>
         <Link to="/admin/products/add" className="btn btn-primary">
-          ➕ Add New Product
+          Add New Product
         </Link>
       </div>
 
@@ -40,8 +53,7 @@ function ProductsList() {
                 type="text"
                 className="form-control"
                 placeholder="Search products by name or category..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                {...register('searchTerm')}
               />
             </div>
             <div className="col-md-6 text-end">
@@ -89,7 +101,7 @@ function ProductsList() {
                     <td>
                       <span className="badge bg-light text-dark">{product.category}</span>
                     </td>
-                    <td className="fw-bold text-primary">Rs. {product.price.toLocaleString()}</td>
+                    <td className="fw-bold text-primary">Rs. {Number(product.price).toLocaleString()}</td>
                     <td>
                       <span className={`badge ${product.stock > 10 ? 'bg-success' : 'bg-warning'}`}>
                         {product.stock} units

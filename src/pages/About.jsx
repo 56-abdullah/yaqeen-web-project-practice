@@ -1,3 +1,6 @@
+import Navigation from '../components/Navigation';
+import Footer from '../components/Footer';
+
 function About() {
   const teamMembers = [
     {
@@ -38,16 +41,19 @@ function About() {
   ];
 
   const values = [
-    { icon: "🔒", title: "Trust & Security", description: "Every transaction is protected with end-to-end encryption and verified seller authentication" },
-    { icon: "✅", title: "Quality Assurance", description: "Rigorous verification process ensures only genuine products reach our customers" },
-    { icon: "🤝", title: "Community First", description: "Building a supportive community of buyers and sellers across Pakistan" },
-    { icon: "⚡", title: "Innovation", description: "Continuously improving our platform with cutting-edge technology" }
+    { title: "Trust & Security", description: "Every transaction is protected with end-to-end encryption and verified seller authentication" },
+    { title: "Quality Assurance", description: "Rigorous verification process ensures only genuine products reach our customers" },
+    { title: "Community First", description: "Building a supportive community of buyers and sellers across Pakistan" },
+    { title: "Innovation", description: "Continuously improving our platform with cutting-edge technology" }
   ];
 
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="yq-section text-center" style={{ background: 'linear-gradient(135deg, #1a56db 0%, #7c3aed 100%)', color: '#fff' }}>
+    <div className="d-flex flex-column min-vh-100">
+      <Navigation />
+      
+      <div className="flex-grow-1">
+        {/* Hero Section */}
+        <section className="py-5 text-center bg-primary text-white">
         <div className="container">
           <h1 className="display-4 fw-bold mb-3">About Yaqeen Marketplace</h1>
           <p className="lead mb-4" style={{ maxWidth: '700px', margin: '0 auto' }}>
@@ -97,15 +103,8 @@ function About() {
             {values.map((value, index) => (
               <div className="col-md-6" key={index}>
                 <div className="yq-card card h-100 p-4">
-                  <div className="d-flex align-items-start gap-3">
-                    <div className="yq-feature-icon" style={{ width: '60px', height: '60px', fontSize: '1.5rem', flexShrink: 0 }}>
-                      {value.icon}
-                    </div>
-                    <div>
-                      <h5 className="fw-bold mb-2">{value.title}</h5>
-                      <p className="text-muted mb-0">{value.description}</p>
-                    </div>
-                  </div>
+                  <h5 className="fw-bold mb-2">{value.title}</h5>
+                  <p className="text-muted mb-0">{value.description}</p>
                 </div>
               </div>
             ))}
@@ -198,6 +197,9 @@ function About() {
           </div>
         </div>
       </section>
+      </div>
+      
+      <Footer />
     </div>
   );
 }

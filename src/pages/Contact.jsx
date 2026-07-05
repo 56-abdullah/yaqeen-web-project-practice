@@ -1,37 +1,39 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { useState } from 'react';
+import { process_contact } from '../serviceApi';
+import Navigation from '../components/Navigation';
+import Footer from '../components/Footer';
 
 function Contact() {
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    subject: '',
-    messageType: 'general',
-    priority: 'medium',
-    company: '',
-    message: ''
+  const [serverMessage, setServerMessage] = useState('');
+  const schema = z.object({
+    fullName: z.string().min(3, { message: 'Minimum 3 characters.' }),
+    email: z.string().email({ message: 'Enter a valid email.' }),
+    phone: z.string().min(10, { message: 'Minimum 10 numbers.' }),
+    subject: z.string().min(3, { message: 'Enter a subject.' }),
+    messageType: z.string(),
+    priority: z.string(),
+    company: z.string().optional(),
+    message: z.string().min(10, { message: 'Minimum 10 characters.' }),
   });
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
-  }
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(schema) });
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    console.log('Contact form submitted:', formData);
-    alert('Thank you for contacting us! We will get back to you within 24 hours.');
-    // Reset form
-    setFormData({
-      fullName: '',
-      email: '',
-      phone: '',
-      subject: '',
-      messageType: 'general',
-      priority: 'medium',
-      company: '',
-      message: ''
-    });
+  async function submit(data) {
+    try {
+      const result = await process_contact(data);
+      setServerMessage(result.message);
+      reset();
+    } catch (error) {
+      setServerMessage('A server error 500 occurred.');
+    }
   }
 
   return (
@@ -47,7 +49,7 @@ function Contact() {
               </p>
             </div>
             <div className="card-body p-4">
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit(submit)}>
                 <div className="row g-3">
                   {/* Full Name */}
                   <div className="col-md-6">
@@ -56,11 +58,9 @@ function Contact() {
                       type="text"
                       className="form-control"
                       placeholder="Enter your full name"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      required
+                      {...register('fullName')}
                     />
+                    {errors.fullName && <p className="text-danger small mt-1">{errors.fullName.message}</p>}
                   </div>
 
                   {/* Email */}
@@ -70,11 +70,9 @@ function Contact() {
                       type="email"
                       className="form-control"
                       placeholder="your.email@example.com"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
+                      {...register('email')}
                     />
+                    {errors.email && <p className="text-danger small mt-1">{errors.email.message}</p>}
                   </div>
 
                   {/* Phone */}
@@ -84,11 +82,9 @@ function Contact() {
                       type="tel"
                       className="form-control"
                       placeholder="+92 3XX XXXXXXX"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      required
+                      {...register('phone')}
                     />
+                    {errors.phone && <p className="text-danger small mt-1">{errors.phone.message}</p>}
                   </div>
 
                   {/* Subject */}
@@ -98,23 +94,15 @@ function Contact() {
                       type="text"
                       className="form-control"
                       placeholder="Brief subject of your message"
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleChange}
-                      required
+                      {...register('subject')}
                     />
+                    {errors.subject && <p className="text-danger small mt-1">{errors.subject.message}</p>}
                   </div>
 
                   {/* Message Type */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">Message Type *</label>
-                    <select
-                      className="form-select"
-                      name="messageType"
-                      value={formData.messageType}
-                      onChange={handleChange}
-                      required
-                    >
+                    <select className="form-select" {...register('messageType')}>
                       <option value="general">General Inquiry</option>
                       <option value="support">Technical Support</option>
                       <option value="business">Business Partnership</option>
@@ -126,13 +114,7 @@ function Contact() {
                   {/* Priority */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">Priority Level *</label>
-                    <select
-                      className="form-select"
-                      name="priority"
-                      value={formData.priority}
-                      onChange={handleChange}
-                      required
-                    >
+                    <select className="form-select" {...register('priority')}>
                       <option value="low">Low - General Question</option>
                       <option value="medium">Medium - Need Response Soon</option>
                       <option value="high">High - Urgent Issue</option>
@@ -146,9 +128,7 @@ function Contact() {
                       type="text"
                       className="form-control"
                       placeholder="Your company or organization name"
-                      name="company"
-                      value={formData.company}
-                      onChange={handleChange}
+                      {...register('company')}
                     />
                   </div>
 
@@ -159,11 +139,9 @@ function Contact() {
                       className="form-control"
                       rows="6"
                       placeholder="Please provide detailed information about your inquiry..."
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      required
+                      {...register('message')}
                     ></textarea>
+                    {errors.message && <p className="text-danger small mt-1">{errors.message.message}</p>}
                   </div>
 
                   {/* Submit Button */}
@@ -174,6 +152,11 @@ function Contact() {
                   </div>
                 </div>
               </form>
+              {serverMessage && (
+                <p className="mt-3 mb-0">
+                  <strong>{serverMessage}</strong>
+                </p>
+              )}
             </div>
           </div>
         </div>

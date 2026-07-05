@@ -1,0 +1,167 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Demo Cheat-Sheet</title><style>body{font-family:"Segoe UI",Arial,sans-serif;color:#1a1a1a;line-height:1.5;max-width:820px;margin:0 auto;padding:26px;font-size:13px}h1{font-size:23px;color:#0d3b66;border-bottom:3px solid #0d3b66;padding-bottom:5px}h2{font-size:17px;color:#0d3b66;margin-top:22px;border-bottom:1px solid #cdd9e6}h3{font-size:14px;color:#14467a}code{background:#eef2f7;padding:1px 5px;border-radius:4px;font-family:Consolas,monospace;font-size:11.5px;color:#b8004a}pre{background:#1e1e2e;color:#e6e6e6;padding:11px;border-radius:6px;overflow-x:auto;font-size:11px;white-space:pre-wrap}pre code{background:none;color:inherit}table{border-collapse:collapse;width:100%;margin:10px 0;font-size:12px}th,td{border:1px solid #c9d4e0;padding:6px 9px;text-align:left}th{background:#0d3b66;color:#fff}tr:nth-child(even) td{background:#f4f7fb}hr{border:none;border-top:2px solid #dde4ec;margin:22px 0}blockquote{border-left:4px solid #0d3b66;margin:10px 0;padding:6px 14px;background:#f4f7fb;color:#0d2740}</style></head><body><h1>Yaqeen — Evaluation Demo Cheat-Sheet</h1>
+<p>Sir wants to SEE it work + SEE the code. Don't explain long. Just: <strong>click → show row in DB → point at the 3 files.</strong> Follow this order.</p>
+<hr />
+<h2>0. Before sir arrives (setup)</h2>
+<ol>
+<li>XAMPP Control Panel → <strong>Apache</strong> Start, <strong>MySQL</strong> Start (both green).</li>
+<li>Terminal in project → <code>npm run dev</code> → open http://localhost:5173</li>
+<li>Open http://localhost/phpmyadmin in another tab → click <code>yaqeen_web_project</code>.</li>
+<li>In VS Code keep these 3 files open in tabs (your "proof"):</li>
+<li><code>src/serviceApi.js</code></li>
+<li><code>src/components/Registration.jsx</code></li>
+<li><code>D:\xampp\htdocs\yaqeen-backend\register_processing.php</code></li>
+</ol>
+<hr />
+<h2>1. The one-line concept (say this once)</h2>
+<blockquote>
+<p>"React form sends data with <strong>axios</strong> to a <strong>PHP</strong> file, PHP runs an <strong>SQL</strong> query on <strong>MySQL</strong>. Same 3 layers for every feature."</p>
+</blockquote>
+<p>Draw nothing. Just show it working.</p>
+<hr />
+<h2>2. DEMO — Create (Register)  ← sir's main task</h2>
+<ol>
+<li>App → <strong>Register</strong> → fill the form → <strong>Create Account</strong>.</li>
+<li>Green message "Account created successfully" appears.</li>
+<li>Switch to phpMyAdmin → <code>users</code> table → <strong>Browse</strong> → <strong>your row is there.</strong> ← the proof.</li>
+<li>Now show the 3 files (point, don't lecture):</li>
+<li><code>Registration.jsx</code> → <code>submit()</code> → <code>await process_registration(data)</code></li>
+<li><code>serviceApi.js</code> → <code>axios.post(".../register_processing.php", data)</code></li>
+<li><code>register_processing.php</code> → <code>INSERT INTO users (...) VALUES (...)</code></li>
+</ol>
+<p>That's the whole task proven. Everything else is the same pattern.</p>
+<hr />
+<h2>3. DEMO — Read (listing from DB)</h2>
+<ol>
+<li>App → <strong>Products</strong> page → 8 products show.</li>
+<li>Say: "These are not hard-coded — they come from the DB."</li>
+<li>Proof: phpMyAdmin → <code>products</code> table (8 rows). Delete one row in phpMyAdmin → refresh the Products page → it's gone.</li>
+<li>Show the code:</li>
+<li><code>Products.jsx</code> → <code>useEffect</code> → <code>await get_products()</code></li>
+<li><code>serviceApi.js</code> → <code>axios.get(".../get_products.php")</code></li>
+<li><code>get_products.php</code> → <code>SELECT * FROM products</code></li>
+</ol>
+<hr />
+<h2>4. DEMO — full CRUD on products (admin)</h2>
+<p>Login first: <strong>Login</strong> → <code>admin@yaqeen.pk</code> / <code>admin123</code> → lands on <code>/admin</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Show</th>
+<th>Do</th>
+<th>Proof</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Create</strong></td>
+<td>Admin → Products → Add New Product → fill (image URL <code>/images/7.png</code>) → submit</td>
+<td>new row in <code>products</code></td>
+</tr>
+<tr>
+<td><strong>Read</strong></td>
+<td>Admin → Products list</td>
+<td>table from DB</td>
+</tr>
+<tr>
+<td><strong>Update</strong></td>
+<td>Edit a product → change price → submit</td>
+<td>price changes in <code>products</code></td>
+</tr>
+<tr>
+<td><strong>Delete</strong></td>
+<td>Delete a product → confirm</td>
+<td>row gone from <code>products</code> (refresh proves it)</td>
+</tr>
+</tbody>
+</table>
+<p>Code to point at (same 3-layer each): <code>ProductsList.jsx</code> / <code>ProductEdit.jsx</code> + <code>serviceApi.js</code> + the matching <code>*_processing.php</code> / <code>delete_product.php</code>.</p>
+<hr />
+<h2>5. DEMO — Login validation (two checks)</h2>
+<ol>
+<li>Type bad email → red zod error, won't submit. (client check)</li>
+<li>Type <code>wrong@x.com</code> / <code>wrongpass</code> → red "Invalid email or password". (DB check)</li>
+<li>Type <code>admin@yaqeen.pk</code> / <code>admin123</code> → logs in → <code>/admin</code>.</li>
+<li>Code: <code>Login.jsx</code> <code>submit()</code> → <code>process_login</code> → <code>login_processing.php</code> → <code>SELECT * FROM users WHERE email AND user_password</code>.</li>
+</ol>
+<hr />
+<h2>6. File map (if sir asks "where is X")</h2>
+<p><strong>Frontend</strong> (<code>src/</code>)
+| File | Does |
+|------|------|
+| <code>serviceApi.js</code> | all axios calls (one function per feature) |
+| <code>components/Registration.jsx</code> | register form → users |
+| <code>components/Login.jsx</code> | login → checks users |
+| <code>pages/Contact.jsx</code> | contact → contacts |
+| <code>pages/Products.jsx</code>, <code>ProductDetail.jsx</code> | read products |
+| <code>components/LandingPage.jsx</code> | read products + testimonials |
+| <code>pages/admin/ProductsList/ProductAdd/ProductEdit.jsx</code> | products CRUD |
+| <code>pages/admin/UsersList/UserAdd/UserEdit.jsx</code> | users CRUD |
+| <code>pages/admin/Dashboard.jsx</code> | counts from DB |</p>
+<p><strong>Backend</strong> (<code>D:\xampp\htdocs\yaqeen-backend\</code>)
+| File | SQL |
+|------|-----|
+| <code>connection.php</code> | opens MySQL |
+| <code>register_processing.php</code> / <code>user_add_processing.php</code> | INSERT users |
+| <code>contact_processing.php</code> | INSERT contacts |
+| <code>product_add_processing.php</code> | INSERT products |
+| <code>user_update_processing.php</code> / <code>product_update_processing.php</code> | UPDATE |
+| <code>delete_user.php</code> / <code>delete_product.php</code> | DELETE |
+| <code>login_processing.php</code> | SELECT (login check) |
+| <code>get_products.php</code> / <code>get_product.php</code> / <code>get_users.php</code> / <code>get_user.php</code> / <code>get_testimonials.php</code> | SELECT (read) |</p>
+<p><strong>Database</strong> <code>yaqeen_web_project</code>: tables <code>users</code>, <code>products</code>, <code>testimonials</code>, <code>contacts</code>.</p>
+<hr />
+<h2>7. CRUD status (if asked)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Create</th>
+<th>Read</th>
+<th>Update</th>
+<th>Delete</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>users</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>products</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>contacts</td>
+<td>✅</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>testimonials</td>
+<td>—</td>
+<td>✅</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>8. If something breaks during demo (panic fixes)</h2>
+<ul>
+<li><strong>Page blank / "map is not a function"</strong> → MySQL or Apache not started. Start both in XAMPP, reload.</li>
+<li><strong>"Access denied for root"</strong> → wrong MySQL running. Services → stop <strong>MySQL80</strong>, start XAMPP MySQL.</li>
+<li><strong>Form shows "server error 500"</strong> → Apache off, or table missing. Start Apache; check the table exists in phpMyAdmin.</li>
+<li><strong>Login fails for everyone</strong> → you're testing a seeded user with no password; use a registered account or <code>admin@yaqeen.pk</code> / <code>admin123</code>.</li>
+</ul>
+<hr />
+<h2>One sentence to open with</h2>
+<blockquote>
+<p>"Sir, every form saves to MySQL through PHP and axios, and every list reads back from MySQL. Let me show you." — then just do section 2.</p>
+</blockquote></body></html>

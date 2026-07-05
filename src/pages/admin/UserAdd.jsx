@@ -1,33 +1,42 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { process_user_add } from '../../serviceApi';
 
 function UserAdd() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    role: 'Buyer',
-    status: 'Active',
-    city: '',
-    address: '',
-    postalCode: '',
-    joinDate: new Date().toISOString().split('T')[0],
-    idCard: '',
-    businessName: ''
+  const [serverMessage, setServerMessage] = useState('');
+
+  const schema = z.object({
+    name: z.string().min(3, { message: 'Minimum 3 characters.' }),
+    email: z.string().email({ message: 'Enter a valid email.' }),
+    phone: z.string().min(10, { message: 'Minimum 10 numbers.' }),
+    idCard: z.string().min(13, { message: 'Enter valid ID card number.' }),
+    password: z.string().min(6, { message: 'Minimum 6 characters.' }),
+    role: z.string(),
+    status: z.string(),
+    joinDate: z.string().min(1, { message: 'Select join date.' }),
+    businessName: z.string().optional(),
+    city: z.string().min(2, { message: 'Enter city.' }),
+    postalCode: z.string().min(4, { message: 'Enter valid postal code.' }),
+    address: z.string().min(5, { message: 'Enter complete address.' }),
   });
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
-  }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(schema) });
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    console.log('User added:', formData);
-    alert('User added successfully!');
-    navigate('/admin/users');
+  async function submit(data) {
+    try {
+      const result = await process_user_add(data);
+      setServerMessage(result.message);
+    } catch (error) {
+      setServerMessage('A server error 500 occurred.');
+    }
   }
 
   return (
@@ -39,7 +48,7 @@ function UserAdd() {
 
       <div className="card border-0 shadow-sm">
         <div className="card-body p-4">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit(submit)}>
             {/* Personal Information */}
             <h5 className="fw-bold mb-3">Personal Information</h5>
             <div className="row g-3 mb-4">
@@ -49,11 +58,9 @@ function UserAdd() {
                   type="text"
                   className="form-control"
                   placeholder="Enter full name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
+                  {...register('name')}
                 />
+                {errors.name && <p className="text-danger small mt-1">{errors.name.message}</p>}
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Email Address *</label>
@@ -61,11 +68,9 @@ function UserAdd() {
                   type="email"
                   className="form-control"
                   placeholder="user@example.com"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
+                  {...register('email')}
                 />
+                {errors.email && <p className="text-danger small mt-1">{errors.email.message}</p>}
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Phone Number *</label>
@@ -73,11 +78,9 @@ function UserAdd() {
                   type="tel"
                   className="form-control"
                   placeholder="+92 3XX XXXXXXX"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
+                  {...register('phone')}
                 />
+                {errors.phone && <p className="text-danger small mt-1">{errors.phone.message}</p>}
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold">ID Card Number *</label>
@@ -85,11 +88,9 @@ function UserAdd() {
                   type="text"
                   className="form-control"
                   placeholder="XXXXX-XXXXXXX-X"
-                  name="idCard"
-                  value={formData.idCard}
-                  onChange={handleChange}
-                  required
+                  {...register('idCard')}
                 />
+                {errors.idCard && <p className="text-danger small mt-1">{errors.idCard.message}</p>}
               </div>
             </div>
 
@@ -102,21 +103,13 @@ function UserAdd() {
                   type="password"
                   className="form-control"
                   placeholder="Create password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
+                  {...register('password')}
                 />
+                {errors.password && <p className="text-danger small mt-1">{errors.password.message}</p>}
               </div>
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Role *</label>
-                <select
-                  className="form-select"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  required
-                >
+                <select className="form-select" {...register('role')}>
                   <option value="Buyer">Buyer</option>
                   <option value="Seller">Seller</option>
                   <option value="Admin">Admin</option>
@@ -124,13 +117,7 @@ function UserAdd() {
               </div>
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Status *</label>
-                <select
-                  className="form-select"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  required
-                >
+                <select className="form-select" {...register('status')}>
                   <option value="Active">Active</option>
                   <option value="Pending">Pending</option>
                   <option value="Suspended">Suspended</option>
@@ -141,11 +128,9 @@ function UserAdd() {
                 <input
                   type="date"
                   className="form-control"
-                  name="joinDate"
-                  value={formData.joinDate}
-                  onChange={handleChange}
-                  required
+                  {...register('joinDate')}
                 />
+                {errors.joinDate && <p className="text-danger small mt-1">{errors.joinDate.message}</p>}
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Business Name (Optional)</label>
@@ -153,9 +138,7 @@ function UserAdd() {
                   type="text"
                   className="form-control"
                   placeholder="For sellers only"
-                  name="businessName"
-                  value={formData.businessName}
-                  onChange={handleChange}
+                  {...register('businessName')}
                 />
               </div>
             </div>
@@ -169,11 +152,9 @@ function UserAdd() {
                   type="text"
                   className="form-control"
                   placeholder="Enter city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  required
+                  {...register('city')}
                 />
+                {errors.city && <p className="text-danger small mt-1">{errors.city.message}</p>}
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Postal Code *</label>
@@ -181,11 +162,9 @@ function UserAdd() {
                   type="text"
                   className="form-control"
                   placeholder="XXXXX"
-                  name="postalCode"
-                  value={formData.postalCode}
-                  onChange={handleChange}
-                  required
+                  {...register('postalCode')}
                 />
+                {errors.postalCode && <p className="text-danger small mt-1">{errors.postalCode.message}</p>}
               </div>
               <div className="col-12">
                 <label className="form-label fw-semibold">Complete Address *</label>
@@ -193,11 +172,9 @@ function UserAdd() {
                   className="form-control"
                   rows="3"
                   placeholder="House/Plot number, Street, Area"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  required
+                  {...register('address')}
                 ></textarea>
+                {errors.address && <p className="text-danger small mt-1">{errors.address.message}</p>}
               </div>
             </div>
 
@@ -215,6 +192,11 @@ function UserAdd() {
               </button>
             </div>
           </form>
+          {serverMessage && (
+            <p className="mt-3 mb-0">
+              <strong>{serverMessage}</strong>
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -1,19 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { get_requests, process_request_status } from '../../serviceApi';
 
 function Requests() {
-  const [requests, setRequests] = useState([
-    { id: 1, type: 'Seller Registration', name: 'Sikandar Khan', email: 'sikandar@email.com', date: '2024-05-01', status: 'Pending', details: 'Requesting seller account approval' },
-    { id: 2, type: 'Product Listing', name: 'Vintage Watch', seller: 'Ahmed Raza', date: '2024-05-02', status: 'Pending', details: 'New product listing for approval' },
-    { id: 3, type: 'Seller Registration', name: 'Sara Ahmed', email: 'sara@email.com', date: '2024-05-02', status: 'Pending', details: 'Fashion business seller registration' },
-    { id: 4, type: 'Product Listing', name: 'Gaming Laptop', seller: 'TechZone PK', date: '2024-05-03', status: 'Pending', details: 'High-end gaming laptop listing' },
-    { id: 5, type: 'Seller Verification', name: 'Hassan Ali', email: 'hassan@email.com', date: '2024-05-04', status: 'Pending', details: 'Business verification documents submitted' },
-    { id: 6, type: 'Product Update', name: 'Wireless Headphones', seller: 'AudioHub', date: '2024-05-05', status: 'Pending', details: 'Product information update request' }
-  ]);
+  const [requests, setRequests] = useState([]);
 
-  const [filterType, setFilterType] = useState('all');
+  // Load requests from the database when the page opens.
+  useEffect(() => {
+    async function load() {
+      const data = await get_requests();
+      setRequests(data);
+    }
+    load();
+  }, []);
 
-  function handleApprove(requestId) {
+  const { register, watch } = useForm();
+  const filterType = watch('filterType') || 'all';
+
+  async function handleApprove(requestId) {
     if (window.confirm('Are you sure you want to approve this request?')) {
+      await process_request_status(requestId, 'Approved');
       setRequests(requests.map(req =>
         req.id === requestId ? { ...req, status: 'Approved' } : req
       ));
@@ -21,8 +27,9 @@ function Requests() {
     }
   }
 
-  function handleReject(requestId) {
+  async function handleReject(requestId) {
     if (window.confirm('Are you sure you want to reject this request?')) {
+      await process_request_status(requestId, 'Rejected');
       setRequests(requests.map(req =>
         req.id === requestId ? { ...req, status: 'Rejected' } : req
       ));
@@ -55,45 +62,24 @@ function Requests() {
         <div className="col-md-4">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <p className="text-muted mb-1 small">Pending Requests</p>
-                  <h3 className="fw-bold mb-0 text-warning">{pendingCount}</h3>
-                </div>
-                <div className="bg-warning bg-opacity-10 p-3 rounded">
-                  <span style={{ fontSize: '1.5rem' }}>⏳</span>
-                </div>
-              </div>
+              <p className="text-muted mb-1 small">Pending Requests</p>
+              <h3 className="fw-bold mb-0 text-warning">{pendingCount}</h3>
             </div>
           </div>
         </div>
         <div className="col-md-4">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <p className="text-muted mb-1 small">Approved</p>
-                  <h3 className="fw-bold mb-0 text-success">{approvedCount}</h3>
-                </div>
-                <div className="bg-success bg-opacity-10 p-3 rounded">
-                  <span style={{ fontSize: '1.5rem' }}>✅</span>
-                </div>
-              </div>
+              <p className="text-muted mb-1 small">Approved</p>
+              <h3 className="fw-bold mb-0 text-success">{approvedCount}</h3>
             </div>
           </div>
         </div>
         <div className="col-md-4">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <p className="text-muted mb-1 small">Rejected</p>
-                  <h3 className="fw-bold mb-0 text-danger">{rejectedCount}</h3>
-                </div>
-                <div className="bg-danger bg-opacity-10 p-3 rounded">
-                  <span style={{ fontSize: '1.5rem' }}>❌</span>
-                </div>
-              </div>
+              <p className="text-muted mb-1 small">Rejected</p>
+              <h3 className="fw-bold mb-0 text-danger">{rejectedCount}</h3>
             </div>
           </div>
         </div>
@@ -105,11 +91,7 @@ function Requests() {
           <div className="row g-3 align-items-center">
             <div className="col-md-4">
               <label className="form-label fw-semibold mb-2">Filter by Type</label>
-              <select
-                className="form-select"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-              >
+              <select className="form-select" {...register('filterType')}>
                 {requestTypes.map((type) => (
                   <option key={type} value={type}>
                     {type === 'all' ? 'All Requests' : type}

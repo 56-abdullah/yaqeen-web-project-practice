@@ -1,36 +1,45 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { process_product_add } from '../../serviceApi';
 
 function ProductAdd() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    price: '',
-    category: '',
-    seller: '',
-    stock: '',
-    condition: 'New',
-    rating: '5',
-    image: '',
-    tags: '',
-    sku: '',
-    weight: '',
-    length: '',
-    width: '',
-    height: ''
+  const [serverMessage, setServerMessage] = useState('');
+
+  const schema = z.object({
+    title: z.string().min(3, { message: 'Minimum 3 characters.' }),
+    sku: z.string().min(2, { message: 'Enter a SKU.' }),
+    description: z.string().min(10, { message: 'Minimum 10 characters.' }),
+    price: z.string().min(1, { message: 'Enter a price.' }),
+    stock: z.string().min(1, { message: 'Enter stock quantity.' }),
+    condition: z.string(),
+    category: z.string().min(1, { message: 'Select a category.' }),
+    seller: z.string().min(2, { message: 'Enter seller name.' }),
+    rating: z.string(),
+    image: z.string().min(1, { message: 'Enter image URL.' }),
+    tags: z.string().optional(),
+    weight: z.string().min(1, { message: 'Enter weight.' }),
+    length: z.string().min(1, { message: 'Enter length.' }),
+    width: z.string().min(1, { message: 'Enter width.' }),
+    height: z.string().min(1, { message: 'Enter height.' }),
   });
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
-  }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(schema) });
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    console.log('Product added:', formData);
-    alert('Product added successfully!');
-    navigate('/admin/products');
+  async function submit(data) {
+    try {
+      const result = await process_product_add(data);
+      setServerMessage(result.message);
+    } catch (error) {
+      setServerMessage('A server error 500 occurred.');
+    }
   }
 
   return (
@@ -42,7 +51,7 @@ function ProductAdd() {
 
       <div className="card border-0 shadow-sm">
         <div className="card-body p-4">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit(submit)}>
             {/* Basic Information */}
             <h5 className="fw-bold mb-3">Basic Information</h5>
             <div className="row g-3 mb-4">
@@ -52,11 +61,9 @@ function ProductAdd() {
                   type="text"
                   className="form-control"
                   placeholder="Enter product title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
+                  {...register('title')}
                 />
+                {errors.title && <p className="text-danger small mt-1">{errors.title.message}</p>}
               </div>
               <div className="col-md-4">
                 <label className="form-label fw-semibold">SKU *</label>
@@ -64,11 +71,9 @@ function ProductAdd() {
                   type="text"
                   className="form-control"
                   placeholder="Product SKU"
-                  name="sku"
-                  value={formData.sku}
-                  onChange={handleChange}
-                  required
+                  {...register('sku')}
                 />
+                {errors.sku && <p className="text-danger small mt-1">{errors.sku.message}</p>}
               </div>
               <div className="col-12">
                 <label className="form-label fw-semibold">Description *</label>
@@ -76,11 +81,9 @@ function ProductAdd() {
                   className="form-control"
                   rows="4"
                   placeholder="Detailed product description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  required
+                  {...register('description')}
                 ></textarea>
+                {errors.description && <p className="text-danger small mt-1">{errors.description.message}</p>}
               </div>
             </div>
 
@@ -93,11 +96,9 @@ function ProductAdd() {
                   type="number"
                   className="form-control"
                   placeholder="0.00"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleChange}
-                  required
+                  {...register('price')}
                 />
+                {errors.price && <p className="text-danger small mt-1">{errors.price.message}</p>}
               </div>
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Stock Quantity *</label>
@@ -105,21 +106,13 @@ function ProductAdd() {
                   type="number"
                   className="form-control"
                   placeholder="Available units"
-                  name="stock"
-                  value={formData.stock}
-                  onChange={handleChange}
-                  required
+                  {...register('stock')}
                 />
+                {errors.stock && <p className="text-danger small mt-1">{errors.stock.message}</p>}
               </div>
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Condition *</label>
-                <select
-                  className="form-select"
-                  name="condition"
-                  value={formData.condition}
-                  onChange={handleChange}
-                  required
-                >
+                <select className="form-select" {...register('condition')}>
                   <option value="New">New</option>
                   <option value="Used">Used</option>
                   <option value="Refurbished">Refurbished</option>
@@ -132,13 +125,7 @@ function ProductAdd() {
             <div className="row g-3 mb-4">
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Category *</label>
-                <select
-                  className="form-select"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  required
-                >
+                <select className="form-select" {...register('category')}>
                   <option value="">Select category</option>
                   <option value="Electronics">Electronics</option>
                   <option value="Fashion">Fashion</option>
@@ -147,6 +134,7 @@ function ProductAdd() {
                   <option value="Beauty">Beauty & Health</option>
                   <option value="Accessories">Accessories</option>
                 </select>
+                {errors.category && <p className="text-danger small mt-1">{errors.category.message}</p>}
               </div>
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Seller Name *</label>
@@ -154,21 +142,13 @@ function ProductAdd() {
                   type="text"
                   className="form-control"
                   placeholder="Seller or brand name"
-                  name="seller"
-                  value={formData.seller}
-                  onChange={handleChange}
-                  required
+                  {...register('seller')}
                 />
+                {errors.seller && <p className="text-danger small mt-1">{errors.seller.message}</p>}
               </div>
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Rating *</label>
-                <select
-                  className="form-select"
-                  name="rating"
-                  value={formData.rating}
-                  onChange={handleChange}
-                  required
-                >
+                <select className="form-select" {...register('rating')}>
                   <option value="5">5 Stars</option>
                   <option value="4.5">4.5 Stars</option>
                   <option value="4">4 Stars</option>
@@ -187,11 +167,9 @@ function ProductAdd() {
                   type="text"
                   className="form-control"
                   placeholder="/images/product.jpg"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleChange}
-                  required
+                  {...register('image')}
                 />
+                {errors.image && <p className="text-danger small mt-1">{errors.image.message}</p>}
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Tags</label>
@@ -199,9 +177,7 @@ function ProductAdd() {
                   type="text"
                   className="form-control"
                   placeholder="tag1, tag2, tag3"
-                  name="tags"
-                  value={formData.tags}
-                  onChange={handleChange}
+                  {...register('tags')}
                 />
               </div>
             </div>
@@ -216,11 +192,9 @@ function ProductAdd() {
                   step="0.01"
                   className="form-control"
                   placeholder="0.00"
-                  name="weight"
-                  value={formData.weight}
-                  onChange={handleChange}
-                  required
+                  {...register('weight')}
                 />
+                {errors.weight && <p className="text-danger small mt-1">{errors.weight.message}</p>}
               </div>
               <div className="col-md-3">
                 <label className="form-label fw-semibold">Length (cm) *</label>
@@ -228,11 +202,9 @@ function ProductAdd() {
                   type="number"
                   className="form-control"
                   placeholder="0"
-                  name="length"
-                  value={formData.length}
-                  onChange={handleChange}
-                  required
+                  {...register('length')}
                 />
+                {errors.length && <p className="text-danger small mt-1">{errors.length.message}</p>}
               </div>
               <div className="col-md-3">
                 <label className="form-label fw-semibold">Width (cm) *</label>
@@ -240,11 +212,9 @@ function ProductAdd() {
                   type="number"
                   className="form-control"
                   placeholder="0"
-                  name="width"
-                  value={formData.width}
-                  onChange={handleChange}
-                  required
+                  {...register('width')}
                 />
+                {errors.width && <p className="text-danger small mt-1">{errors.width.message}</p>}
               </div>
               <div className="col-md-3">
                 <label className="form-label fw-semibold">Height (cm) *</label>
@@ -252,11 +222,9 @@ function ProductAdd() {
                   type="number"
                   className="form-control"
                   placeholder="0"
-                  name="height"
-                  value={formData.height}
-                  onChange={handleChange}
-                  required
+                  {...register('height')}
                 />
+                {errors.height && <p className="text-danger small mt-1">{errors.height.message}</p>}
               </div>
             </div>
 
@@ -274,6 +242,11 @@ function ProductAdd() {
               </button>
             </div>
           </form>
+          {serverMessage && (
+            <p className="mt-3 mb-0">
+              <strong>{serverMessage}</strong>
+            </p>
+          )}
         </div>
       </div>
     </div>

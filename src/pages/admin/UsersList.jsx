@@ -1,13 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
-import usersData from '../../data/usersData.json';
+import { get_users, process_user_delete } from '../../serviceApi';
 
 function UsersList() {
-  const [users, setUsers] = useState(usersData);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [users, setUsers] = useState([]);
+  const { register, watch } = useForm();
+  const searchTerm = watch('searchTerm') || '';
 
-  function handleDelete(userId) {
+  // Load users from the database when the page opens.
+  useEffect(() => {
+    async function load() {
+      const data = await get_users();
+      setUsers(data);
+    }
+    load();
+  }, []);
+
+  async function handleDelete(userId) {
     if (window.confirm('Are you sure you want to delete this user?')) {
+      // Delete from the database first, then remove from the screen.
+      await process_user_delete(userId);
       setUsers(users.filter(u => u.id !== userId));
       alert('User deleted successfully!');
     }
@@ -35,7 +48,7 @@ function UsersList() {
           <p className="text-muted mb-0">Manage all users in the marketplace</p>
         </div>
         <Link to="/admin/users/add" className="btn btn-success">
-          ➕ Add New User
+          Add New User
         </Link>
       </div>
 
@@ -48,8 +61,7 @@ function UsersList() {
                 type="text"
                 className="form-control"
                 placeholder="Search users by name, email, or role..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                {...register('searchTerm')}
               />
             </div>
             <div className="col-md-6 text-end">

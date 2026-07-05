@@ -1,51 +1,28 @@
+import { useState, useEffect } from 'react';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
+import { get_team, get_milestones, get_values, get_stats } from '../serviceApi';
 
 function About() {
-  const teamMembers = [
-    {
-      id: 1,
-      name: "Muhammad Asad",
-      role: "Founder & CEO",
-      image: "/images/18.jpg",
-      description: "Visionary leader with 10+ years of e-commerce experience"
-    },
-    {
-      id: 2,
-      name: "Ayesha Malik",
-      role: "Chief Technology Officer",
-      image: "/images/19.jpg",
-      description: "Tech expert specializing in secure marketplace platforms"
-    },
-    {
-      id: 3,
-      name: "Hassan Raza",
-      role: "Head of Operations",
-      image: "/images/20.jpg",
-      description: "Operations specialist ensuring smooth seller-buyer transactions"
-    },
-    {
-      id: 4,
-      name: "Fatima Khan",
-      role: "Customer Success Manager",
-      image: "/images/21.png",
-      description: "Dedicated to providing exceptional customer support 24/7"
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [milestones, setMilestones] = useState([]);
+  const [values, setValues] = useState([]);
+  const [stats, setStats] = useState([]);
+
+  // Load all About page content from the database when the page opens.
+  useEffect(() => {
+    async function load() {
+      const team = await get_team();
+      setTeamMembers(team);
+      const journey = await get_milestones();
+      setMilestones(journey);
+      const coreValues = await get_values();
+      setValues(coreValues);
+      const aboutStats = await get_stats();
+      setStats(aboutStats);
     }
-  ];
-
-  const milestones = [
-    { year: "2022", event: "Yaqeen Marketplace Founded", description: "Started with a vision to create Pakistan's most trusted marketplace" },
-    { year: "2023", event: "10,000+ Users Milestone", description: "Reached our first major milestone with verified sellers and buyers" },
-    { year: "2024", event: "Nationwide Expansion", description: "Expanded operations to all major cities across Pakistan" },
-    { year: "2025", event: "Award Recognition", description: "Recognized as Best Emerging E-commerce Platform" }
-  ];
-
-  const values = [
-    { title: "Trust & Security", description: "Every transaction is protected with end-to-end encryption and verified seller authentication" },
-    { title: "Quality Assurance", description: "Rigorous verification process ensures only genuine products reach our customers" },
-    { title: "Community First", description: "Building a supportive community of buyers and sellers across Pakistan" },
-    { title: "Innovation", description: "Continuously improving our platform with cutting-edge technology" }
-  ];
+    load();
+  }, []);
 
   return (
     <div className="d-flex flex-column min-vh-100">
@@ -170,30 +147,14 @@ function About() {
       <section className="yq-section">
         <div className="container">
           <div className="row g-4 text-center">
-            <div className="col-md-3">
-              <div className="yq-card card p-4">
-                <h2 className="fw-bold mb-2" style={{ color: 'var(--yq-primary)', fontSize: '2.5rem' }}>50K+</h2>
-                <p className="text-muted mb-0">Active Users</p>
+            {stats.map((stat) => (
+              <div className="col-md-3" key={stat.id}>
+                <div className="yq-card card p-4">
+                  <h2 className="fw-bold mb-2" style={{ color: 'var(--yq-primary)', fontSize: '2.5rem' }}>{stat.number}</h2>
+                  <p className="text-muted mb-0">{stat.label}</p>
+                </div>
               </div>
-            </div>
-            <div className="col-md-3">
-              <div className="yq-card card p-4">
-                <h2 className="fw-bold mb-2" style={{ color: 'var(--yq-primary)', fontSize: '2.5rem' }}>5K+</h2>
-                <p className="text-muted mb-0">Verified Sellers</p>
-              </div>
-            </div>
-            <div className="col-md-3">
-              <div className="yq-card card p-4">
-                <h2 className="fw-bold mb-2" style={{ color: 'var(--yq-primary)', fontSize: '2.5rem' }}>100K+</h2>
-                <p className="text-muted mb-0">Products Listed</p>
-              </div>
-            </div>
-            <div className="col-md-3">
-              <div className="yq-card card p-4">
-                <h2 className="fw-bold mb-2" style={{ color: 'var(--yq-primary)', fontSize: '2.5rem' }}>98%</h2>
-                <p className="text-muted mb-0">Customer Satisfaction</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>

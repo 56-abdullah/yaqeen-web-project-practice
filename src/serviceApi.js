@@ -6,7 +6,7 @@ import axios from "axios";
 //  - Live hosting ->  "https://YOURSITE.infinityfreeapp.com/yaqeen-backend"
 //  Change ONLY this line when you deploy.
 // ============================================================
-const BASE_URL = "http://localhost/yaqeen-backend";
+const BASE_URL = "https://yaqeen.great-site.net/yaqeen-backend";
 
 // ===== WRITE functions: send data INTO the database =====
 
@@ -111,5 +111,29 @@ export const get_requests = async () => {
 // All recent activities (for the admin Dashboard).
 export const get_activities = async () => {
   const response = await axios.get(BASE_URL + "/get_activities.php");
+  return response.data;
+};
+
+// Team members (for the About page).
+export const get_team = async () => {
+  const response = await axios.get(BASE_URL + "/get_team.php");
+  return response.data;
+};
+
+// Milestones / journey (for the About page).
+export const get_milestones = async () => {
+  const response = await axios.get(BASE_URL + "/get_milestones.php");
+  return response.data;
+};
+
+// Core values (for the About page).
+export const get_values = async () => {
+  const response = await axios.get(BASE_URL + "/get_values.php");
+  return response.data;
+};
+
+// About stats (for the About page).
+export const get_stats = async () => {
+  const response = await axios.get(BASE_URL + "/get_stats.php");
   return response.data;
 };

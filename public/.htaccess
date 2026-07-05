@@ -1,0 +1,15 @@
+# React Router (single-page app) support on Apache / InfinityFree.
+# Without this, refreshing a page like /products gives a 404.
+# Real files (index.html, /assets, /yaqeen-backend/*.php, /images) are served normally;
+# every other path falls back to index.html so React Router can handle it.
+
+RewriteEngine On
+RewriteBase /
+
+# If the requested file or folder exists on disk, serve it as-is.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Otherwise, send everything to index.html (React handles the route).
+RewriteRule ^ index.html [L]

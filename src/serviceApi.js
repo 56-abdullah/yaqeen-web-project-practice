@@ -137,3 +137,15 @@ export const get_stats = async () => {
   const response = await axios.get(BASE_URL + "/get_stats.php");
   return response.data;
 };
+
+// System status rows (for the admin Dashboard right card).
+export const get_status = async () => {
+  const response = await axios.get(BASE_URL + "/get_status.php");
+  return response.data;
+};
+
+// Contact information (for the Contact page).
+export const get_contact_info = async () => {
+  const response = await axios.get(BASE_URL + "/get_contact_info.php");
+  return response.data;
+};

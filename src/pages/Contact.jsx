@@ -1,13 +1,23 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useState } from 'react';
-import { process_contact } from '../serviceApi';
+import { useState, useEffect } from 'react';
+import { process_contact, get_contact_info } from '../serviceApi';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 
 function Contact() {
   const [serverMessage, setServerMessage] = useState('');
+  const [info, setInfo] = useState(null);
+
+  // Load the contact details from the database when the page opens.
+  useEffect(() => {
+    async function load() {
+      const data = await get_contact_info();
+      setInfo(data);
+    }
+    load();
+  }, []);
   const schema = z.object({
     fullName: z.string().min(3, { message: 'Minimum 3 characters.' }),
     email: z.string().email({ message: 'Enter a valid email.' }),
@@ -163,6 +173,7 @@ function Contact() {
 
         {/* Contact Information */}
         <div className="col-lg-4">
+          {info && (
           <div className="yq-card card p-4 mb-4">
             <h5 className="fw-bold mb-3">Contact Information</h5>
             <div className="mb-3">
@@ -170,10 +181,7 @@ function Contact() {
                 <span style={{ fontSize: '1.2rem' }}>📍</span>
                 <div>
                   <p className="fw-semibold mb-1">Address</p>
-                  <p className="text-muted small mb-0">
-                    Plot 123, I-9 Markaz<br />
-                    Islamabad, Pakistan
-                  </p>
+                  <p className="text-muted small mb-0">{info.address}</p>
                 </div>
               </div>
             </div>
@@ -182,8 +190,8 @@ function Contact() {
                 <span style={{ fontSize: '1.2rem' }}>📞</span>
                 <div>
                   <p className="fw-semibold mb-1">Phone</p>
-                  <p className="text-muted small mb-0">+92 51 1234567</p>
-                  <p className="text-muted small mb-0">+92 300 1234567</p>
+                  <p className="text-muted small mb-0">{info.phone1}</p>
+                  <p className="text-muted small mb-0">{info.phone2}</p>
                 </div>
               </div>
             </div>
@@ -192,8 +200,8 @@ function Contact() {
                 <span style={{ fontSize: '1.2rem' }}>✉️</span>
                 <div>
                   <p className="fw-semibold mb-1">Email</p>
-                  <p className="text-muted small mb-0">support@yaqeen.pk</p>
-                  <p className="text-muted small mb-0">info@yaqeen.pk</p>
+                  <p className="text-muted small mb-0">{info.email1}</p>
+                  <p className="text-muted small mb-0">{info.email2}</p>
                 </div>
               </div>
             </div>
@@ -202,13 +210,14 @@ function Contact() {
                 <span style={{ fontSize: '1.2rem' }}>⏰</span>
                 <div>
                   <p className="fw-semibold mb-1">Business Hours</p>
-                  <p className="text-muted small mb-0">Monday - Friday: 9:00 AM - 6:00 PM</p>
-                  <p className="text-muted small mb-0">Saturday: 10:00 AM - 4:00 PM</p>
-                  <p className="text-muted small mb-0">Sunday: Closed</p>
+                  <p className="text-muted small mb-0">{info.hours_weekday}</p>
+                  <p className="text-muted small mb-0">{info.hours_saturday}</p>
+                  <p className="text-muted small mb-0">{info.hours_sunday}</p>
                 </div>
               </div>
             </div>
           </div>
+          )}
 
           <div className="yq-card card p-4">
             <h5 className="fw-bold mb-3">Quick Support</h5>

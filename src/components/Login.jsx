@@ -31,7 +31,8 @@ function Login() {
       const result = await process_login(data);
 
       if (result.success) {
-        login(data.email);
+        // Save the user's name (for display) and id (for their profile CRUD).
+        login(result.name, result.id);
         // Redirect by the role the database returned.
         if (result.role === 'Admin') {
           navigate('/admin');

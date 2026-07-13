@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { get_products, get_users, get_activities, get_status } from '../../serviceApi';
+import { get_products, get_users, get_activities } from '../../serviceApi';
 
 function Dashboard() {
-  // Load products + users + activities + system status from the database.
+  // Load products + users + activities from the database.
   const [productsData, setProductsData] = useState([]);
   const [usersData, setUsersData] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
-  const [systemStatus, setSystemStatus] = useState([]);
 
   useEffect(() => {
     async function load() {
@@ -17,15 +16,9 @@ function Dashboard() {
       setUsersData(users);
       const activities = await get_activities();
       setRecentActivities(activities);
-      const status = await get_status();
-      setSystemStatus(status);
     }
     load();
   }, []);
-
-  // Split the status rows: badges vs the storage progress bar.
-  const statusBadges = systemStatus.filter(s => s.state !== 'storage');
-  const storageRow = systemStatus.find(s => s.state === 'storage');
 
   // Calculate statistics
   const totalProducts = productsData.length;
@@ -111,7 +104,7 @@ function Dashboard() {
 
       {/* Recent Activity */}
       <div className="row g-4">
-        <div className="col-md-8">
+        <div className="col-md-12">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
               <h5 className="fw-bold mb-3">Recent Activity</h5>
@@ -145,34 +138,6 @@ function Dashboard() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-4">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body">
-              <h5 className="fw-bold mb-3">System Status</h5>
-              <div className="mb-3">
-                {statusBadges.map((item) => (
-                  <div className="d-flex justify-content-between mb-1" key={item.id}>
-                    <span className="small">{item.label}</span>
-                    <span className="badge bg-success">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-              {storageRow && (
-                <>
-                  <hr />
-                  <div>
-                    <p className="small text-muted mb-2">{storageRow.label}</p>
-                    <div className="progress" style={{ height: '8px' }}>
-                      <div className="progress-bar bg-primary" role="progressbar" style={{ width: `${storageRow.value}%` }}></div>
-                    </div>
-                    <p className="small text-muted mt-1">{storageRow.value}% of 100GB used</p>
-                  </div>
-                </>
-              )}
             </div>
           </div>
         </div>

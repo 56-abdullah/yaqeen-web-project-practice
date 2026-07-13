@@ -29,6 +29,7 @@
             echo json_encode([
                 "success" => true,
                 "message" => "Login successful. Welcome back, " . $user["full_name"] . ".",
+                "id"      => $user["id"],
                 "role"    => $user["role"],
                 "name"    => $user["full_name"]
             ]);

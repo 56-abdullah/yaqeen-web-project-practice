@@ -42,6 +42,7 @@ function Navigation() {
             </button>
             {user ? (
               <>
+                <Link to="/profile" className="btn btn-outline-light btn-sm">My Profile</Link>
                 <span className="text-light fw-semibold">Hi, {user}</span>
                 <button className="btn btn-outline-light" onClick={logout}>Logout</button>
               </>

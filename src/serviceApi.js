@@ -1,11 +1,5 @@
 import axios from "axios";
 
-// ============================================================
-//  ONE place to set where the PHP backend lives.
-//  - Local XAMPP  ->  "http://localhost/yaqeen-backend"
-//  - Live hosting ->  "https://YOURSITE.infinityfreeapp.com/yaqeen-backend"
-//  Change ONLY this line when you deploy.
-// ============================================================
 const BASE_URL = "https://yaqeen.great-site.net/yaqeen-backend";
 
 // ===== WRITE functions: send data INTO the database =====
